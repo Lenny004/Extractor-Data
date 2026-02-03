@@ -6,7 +6,7 @@ import { SchemaDefinition, ValidationResult, SupportedType } from '../models/dat
 @Injectable({
   providedIn: 'root'
 })
-export class schemaService {
+export class SchemaService {
   private apiUrl = 'http://localhost:3000/api/schema';
 
   constructor(private http: HttpClient) {}

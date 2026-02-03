@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { fileService } from '../../services/file.service';
+import { FileService } from '../../services/file.service';
 import { ParsedFileResponse } from '../../models/data.models';
 
 @Component({
@@ -30,7 +30,7 @@ export class FileUploaderComponent {
   selectedFile: File | null = null;
 
   constructor(
-    private fileService: fileService,
+    private fileService: FileService,
     private snackBar: MatSnackBar
   ) {}
 

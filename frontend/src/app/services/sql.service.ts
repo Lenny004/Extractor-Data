@@ -6,7 +6,7 @@ import { SchemaDefinition, SqlGenerationResult } from '../models/data.models';
 @Injectable({
   providedIn: 'root'
 })
-export class sqlService {
+export class SqlService {
   private apiUrl = 'http://localhost:3000/api/sql';
 
   constructor(private http: HttpClient) {}

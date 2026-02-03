@@ -6,7 +6,7 @@ import { ParsedFileResponse } from '../models/data.models';
 @Injectable({
   providedIn: 'root'
 })
-export class fileService {
+export class FileService {
   private apiUrl = 'http://localhost:3000/api/files';
 
   constructor(private http: HttpClient) {}

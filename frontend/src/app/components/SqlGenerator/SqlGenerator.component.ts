@@ -9,7 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
-import { sqlService } from '../../services/sql.service';
+import { SqlService } from '../../services/sql.service';
 import { FileData, SchemaDefinition, SqlGenerationResult } from '../../models/data.models';
 
 @Component({
@@ -41,7 +41,7 @@ export class SqlGeneratorComponent implements OnChanges {
   isLoading = false;
 
   constructor(
-    private sqlService: sqlService,
+    private sqlService: SqlService,
     private snackBar: MatSnackBar
   ) {}
 

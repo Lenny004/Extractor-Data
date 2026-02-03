@@ -197,7 +197,8 @@ ng serve
 | Element | Convention | Example |
 |---------|------------|---------|
 | Components | PascalCase | `FileUploader`, `DataPreview` |
-| Services | camelCase | `fileService`, `schemaService` |
+| Service Classes | PascalCase | `FileService`, `SchemaService` |
+| Service Instances | camelCase | `fileService`, `schemaService` |
 | CSS Classes | BEM | `.file-uploader__dropzone--active` |
 
 ### BEM CSS Methodology

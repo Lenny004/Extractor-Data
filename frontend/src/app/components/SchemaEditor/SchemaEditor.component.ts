@@ -8,7 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { schemaService } from '../../services/schema.service';
+import { SchemaService } from '../../services/schema.service';
 import { FileData, SchemaDefinition, SupportedType } from '../../models/data.models';
 
 @Component({
@@ -37,7 +37,7 @@ export class SchemaEditorComponent implements OnChanges {
   isLoading = false;
 
   constructor(
-    private schemaService: schemaService,
+    private schemaService: SchemaService,
     private snackBar: MatSnackBar
   ) {
     this.loadSupportedTypes();
