@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Angular-17+-DD0031?style=flat&logo=angular" alt="Angular 17+">
+  <img src="https://img.shields.io/badge/Angular-19+-DD0031?style=flat&logo=angular" alt="Angular 19+">
   <img src="https://img.shields.io/badge/Node.js-20+-339933?style=flat&logo=node.js" alt="Node.js">
   <img src="https://img.shields.io/badge/Express-4.x-000000?style=flat&logo=express" alt="Express">
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat&logo=typescript" alt="TypeScript">
@@ -44,7 +44,7 @@
 
 ```
 Extractor-Data/
-├── frontend/                    # Angular 17+ application
+├── frontend/                    # Angular 19+ application
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── components/     # UI Components (PascalCase)
@@ -83,12 +83,12 @@ Before you begin, ensure you have the following installed:
 |-------------|---------|---------------|
 | Node.js | 18.x or higher | `node --version` |
 | npm | 8.x or higher | `npm --version` |
-| Angular CLI | 17.x or higher | `ng version` |
+| Angular CLI | 19.x or higher | `ng version` |
 
 ### Installing Angular CLI
 
 ```bash
-npm install -g @angular/cli@17
+npm install -g @angular/cli@19
 ```
 
 ---
@@ -229,7 +229,7 @@ To effectively work on and maintain this project, developers should have knowled
 
 ### Frontend Development
 
-- **Angular 17+**
+- **Angular 19+**
   - Standalone components
   - Signals and control flow (@if, @for)
   - Dependency injection
