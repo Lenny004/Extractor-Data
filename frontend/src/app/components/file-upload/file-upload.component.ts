@@ -6,11 +6,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 @Component({
-  selector: 'app-file-upload',
-  standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatProgressBarModule],
-  templateUrl: './file-upload.component.html',
-  styleUrl: './file-upload.component.css'
+    selector: 'app-file-upload',
+    imports: [CommonModule, MatCardModule, MatButtonModule, MatIconModule, MatProgressBarModule],
+    templateUrl: './file-upload.component.html',
+    styleUrl: './file-upload.component.css'
 })
 export class FileUploadComponent {
   SelectedFile: File | null = null;

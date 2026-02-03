@@ -4,11 +4,10 @@ import { FileUploadComponent } from './components/file-upload/file-upload.compon
 import { DataViewerComponent } from './components/data-viewer/data-viewer.component';
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [RouterOutlet, FileUploadComponent, DataViewerComponent],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+    selector: 'app-root',
+    imports: [RouterOutlet, FileUploadComponent, DataViewerComponent],
+    templateUrl: './app.component.html',
+    styleUrl: './app.component.css'
 })
 export class AppComponent {
   Title = 'Data Extractor Tool';

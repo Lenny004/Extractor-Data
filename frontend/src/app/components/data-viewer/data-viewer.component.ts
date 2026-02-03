@@ -12,11 +12,10 @@ interface DataRow {
 }
 
 @Component({
-  selector: 'app-data-viewer',
-  standalone: true,
-  imports: [CommonModule, MatCardModule, MatTableModule, MatChipsModule],
-  templateUrl: './data-viewer.component.html',
-  styleUrl: './data-viewer.component.css'
+    selector: 'app-data-viewer',
+    imports: [CommonModule, MatCardModule, MatTableModule, MatChipsModule],
+    templateUrl: './data-viewer.component.html',
+    styleUrl: './data-viewer.component.css'
 })
 export class DataViewerComponent {
   DisplayedColumns: string[] = ['Id', 'Name', 'Email', 'Status'];
