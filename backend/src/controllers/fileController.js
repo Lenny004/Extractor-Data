@@ -1,5 +1,4 @@
-const xlsx = require('xlsx');
-const { parseExcelBuffer } = require('../utils/excelParser');
+const { parseExcelBuffer, parseExcelRaw } = require('../utils/excelParser');
 
 /**
  * Upload and process a file
@@ -10,7 +9,7 @@ const uploadFile = async (req, res, next) => {
       return res.status(400).json({ error: true, message: 'No file uploaded' });
     }
 
-    const data = parseExcelBuffer(req.file.buffer);
+    const data = await parseExcelBuffer(req.file.buffer);
     
     res.json({
       success: true,
@@ -33,7 +32,7 @@ const previewFile = async (req, res, next) => {
     }
 
     const limit = parseInt(req.query.limit) || 10;
-    const data = parseExcelBuffer(req.file.buffer, { limit });
+    const data = await parseExcelBuffer(req.file.buffer, { limit });
     
     res.json({
       success: true,
@@ -55,13 +54,7 @@ const parseFile = async (req, res, next) => {
       return res.status(400).json({ error: true, message: 'No file uploaded' });
     }
 
-    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    
-    const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-    const headers = jsonData[0] || [];
-    const rows = jsonData.slice(1);
+    const { sheetName, headers, rows } = await parseExcelRaw(req.file.buffer);
 
     res.json({
       success: true,

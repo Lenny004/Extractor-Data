@@ -261,7 +261,7 @@ To effectively work on and maintain this project, developers should have knowled
   - Error handling
 
 - **Data Processing**
-  - Working with the xlsx library
+  - Working with the ExcelJS library
   - CSV/Excel file parsing
   - Data transformation
 
