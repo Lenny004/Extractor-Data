@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 @Injectable({
   providedIn: 'root'
 })
-export class SchemaServiceService {
+export class SchemaService {
   private ApiUrl = 'http://localhost:3000/api/schemas';
 
   constructor(private Http: HttpClient) { }
