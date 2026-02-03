@@ -1,0 +1,95 @@
+/* BEM naming convention for SqlGenerator component */
+
+.sql-generator {
+  margin-bottom: 24px;
+}
+
+.sql-generator--empty {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.sql-generator__options {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.sql-generator__table-name {
+  flex: 1;
+  min-width: 200px;
+}
+
+.sql-generator__generate-btn {
+  height: 56px;
+  min-width: 150px;
+}
+
+.sql-generator__generate-btn mat-spinner {
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.sql-generator__tabs {
+  margin-top: 16px;
+}
+
+.sql-generator__output {
+  background-color: #263238;
+  border-radius: 4px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+
+.sql-generator__output-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #37474f;
+  color: #eceff1;
+  font-size: 14px;
+}
+
+.sql-generator__output-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.sql-generator__output-actions button {
+  color: #b0bec5;
+}
+
+.sql-generator__output-actions button:hover {
+  color: #eceff1;
+}
+
+.sql-generator__code {
+  margin: 0;
+  padding: 16px;
+  color: #80cbc4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.sql-generator__empty-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: #bdbdbd;
+  margin-bottom: 16px;
+}
+
+.sql-generator__empty-text {
+  color: #9e9e9e;
+  font-size: 16px;
+  margin: 0;
+}

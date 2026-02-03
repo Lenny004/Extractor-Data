@@ -1,0 +1,49 @@
+@if (data) {
+  <mat-card class="schema-editor">
+    <mat-card-header>
+      <mat-card-title>Schema Editor</mat-card-title>
+      <mat-card-subtitle>Define data types for each column</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (isLoading) {
+        <div class="schema-editor__loading">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Detecting schema...</p>
+        </div>
+      } @else {
+        <div class="schema-editor__columns">
+          @for (header of data.headers; track header) {
+            <div class="schema-editor__column">
+              <mat-form-field appearance="outline" class="schema-editor__field">
+                <mat-label>{{ header }}</mat-label>
+                <mat-select 
+                  [value]="schema[header] || 'VARCHAR(255)'"
+                  (selectionChange)="onTypeChange(header, $event.value)"
+                >
+                  @for (type of getTypesList(); track type) {
+                    <mat-option [value]="type">{{ type }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+          }
+        </div>
+      }
+    </mat-card-content>
+
+    <mat-card-actions class="schema-editor__actions">
+      <button mat-stroked-button color="primary" (click)="detectSchema()" [disabled]="isLoading">
+        <mat-icon>auto_fix_high</mat-icon>
+        Auto-detect Types
+      </button>
+    </mat-card-actions>
+  </mat-card>
+} @else {
+  <mat-card class="schema-editor schema-editor--empty">
+    <mat-card-content>
+      <mat-icon class="schema-editor__empty-icon">schema</mat-icon>
+      <p class="schema-editor__empty-text">Upload a file to configure schema</p>
+    </mat-card-content>
+  </mat-card>
+}

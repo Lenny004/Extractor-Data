@@ -1,0 +1,84 @@
+@if (data) {
+  <mat-card class="sql-generator">
+    <mat-card-header>
+      <mat-card-title>SQL Generator</mat-card-title>
+      <mat-card-subtitle>Generate SQL statements from your data</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="sql-generator__options">
+        <mat-form-field appearance="outline" class="sql-generator__table-name">
+          <mat-label>Table Name</mat-label>
+          <input matInput [(ngModel)]="tableName" placeholder="Enter table name" />
+        </mat-form-field>
+
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="generateFullScript()"
+          [disabled]="!canGenerate || isLoading"
+          class="sql-generator__generate-btn"
+        >
+          @if (isLoading) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            <mat-icon>code</mat-icon>
+          }
+          Generate SQL
+        </button>
+      </div>
+
+      @if (generatedSql) {
+        <mat-tab-group class="sql-generator__tabs">
+          <mat-tab label="Full Script">
+            <div class="sql-generator__output">
+              <div class="sql-generator__output-header">
+                <span>Complete SQL Script</span>
+                <div class="sql-generator__output-actions">
+                  <button mat-icon-button (click)="copyToClipboard(generatedSql)" matTooltip="Copy to clipboard">
+                    <mat-icon>content_copy</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="downloadSql()" matTooltip="Download SQL file">
+                    <mat-icon>download</mat-icon>
+                  </button>
+                </div>
+              </div>
+              <pre class="sql-generator__code">{{ generatedSql }}</pre>
+            </div>
+          </mat-tab>
+          
+          <mat-tab label="CREATE TABLE">
+            <div class="sql-generator__output">
+              <div class="sql-generator__output-header">
+                <span>CREATE TABLE Statement</span>
+                <button mat-icon-button (click)="copyToClipboard(createTableSql)">
+                  <mat-icon>content_copy</mat-icon>
+                </button>
+              </div>
+              <pre class="sql-generator__code">{{ createTableSql }}</pre>
+            </div>
+          </mat-tab>
+          
+          <mat-tab label="INSERT Statements">
+            <div class="sql-generator__output">
+              <div class="sql-generator__output-header">
+                <span>INSERT Statements</span>
+                <button mat-icon-button (click)="copyToClipboard(insertSql)">
+                  <mat-icon>content_copy</mat-icon>
+                </button>
+              </div>
+              <pre class="sql-generator__code">{{ insertSql }}</pre>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+      }
+    </mat-card-content>
+  </mat-card>
+} @else {
+  <mat-card class="sql-generator sql-generator--empty">
+    <mat-card-content>
+      <mat-icon class="sql-generator__empty-icon">data_object</mat-icon>
+      <p class="sql-generator__empty-text">Upload a file to generate SQL</p>
+    </mat-card-content>
+  </mat-card>
+}

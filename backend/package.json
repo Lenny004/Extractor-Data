@@ -1,0 +1,25 @@
+{
+  "name": "data-extractor-backend",
+  "version": "1.0.0",
+  "description": "Backend server for Data Extractor Tool - processes files, validates schemas, and generates SQL",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": [
+    "data-extractor",
+    "excel",
+    "sql",
+    "express",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "multer": "^2.0.2",
+    "xlsx": "^0.18.5"
+  }
+}

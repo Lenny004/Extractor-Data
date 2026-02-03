@@ -1,0 +1,49 @@
+<mat-card class="file-uploader">
+  <mat-card-header>
+    <mat-card-title>Upload File</mat-card-title>
+    <mat-card-subtitle>Drag & drop or click to select Excel/CSV files</mat-card-subtitle>
+  </mat-card-header>
+  
+  <mat-card-content>
+    <div 
+      class="file-uploader__dropzone"
+      [class.file-uploader__dropzone--active]="isDragOver"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      <input 
+        type="file" 
+        class="file-uploader__input"
+        accept=".xlsx,.xls,.csv"
+        (change)="onFileSelect($event)"
+        #fileInput
+      />
+      
+      <div class="file-uploader__content" (click)="fileInput.click()">
+        <mat-icon class="file-uploader__icon">cloud_upload</mat-icon>
+        <p class="file-uploader__text">
+          @if (selectedFile) {
+            <strong>{{ selectedFile.name }}</strong>
+          } @else {
+            Drop your file here or <strong>click to browse</strong>
+          }
+        </p>
+        <p class="file-uploader__hint">Supported formats: XLSX, XLS, CSV</p>
+      </div>
+    </div>
+
+    @if (isLoading) {
+      <mat-progress-bar mode="indeterminate" class="file-uploader__progress"></mat-progress-bar>
+    }
+  </mat-card-content>
+
+  <mat-card-actions class="file-uploader__actions">
+    @if (selectedFile) {
+      <button mat-button color="warn" (click)="clearFile()">
+        <mat-icon>clear</mat-icon>
+        Clear
+      </button>
+    }
+  </mat-card-actions>
+</mat-card>

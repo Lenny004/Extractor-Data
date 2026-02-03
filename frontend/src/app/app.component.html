@@ -1,0 +1,30 @@
+<div class="app">
+  <mat-toolbar color="primary" class="app__toolbar">
+    <mat-icon class="app__logo">transform</mat-icon>
+    <span class="app__title">{{ title }}</span>
+  </mat-toolbar>
+
+  <main class="app__main">
+    <div class="app__container">
+      <section class="app__section">
+        <app-file-uploader (fileUploaded)="onFileUploaded($event)"></app-file-uploader>
+      </section>
+
+      <section class="app__section">
+        <app-data-preview [data]="fileData"></app-data-preview>
+      </section>
+
+      <section class="app__section">
+        <app-schema-editor [data]="fileData" (schemaChanged)="onSchemaChanged($event)"></app-schema-editor>
+      </section>
+
+      <section class="app__section">
+        <app-sql-generator [data]="fileData" [schema]="schema"></app-sql-generator>
+      </section>
+    </div>
+  </main>
+
+  <footer class="app__footer">
+    <p>&copy; 2024 Data Extractor Tool - Excel to SQL Converter</p>
+  </footer>
+</div>
