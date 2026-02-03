@@ -1,0 +1,64 @@
+/* DataViewer Component Styles - BEM Convention */
+.DataViewer {
+  margin-bottom: 2rem;
+}
+
+.DataViewer__Header {
+  margin-bottom: 1rem;
+}
+
+.DataViewer__Title {
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.DataViewer__Content {
+  padding: 1rem;
+}
+
+.DataViewer__TableContainer {
+  overflow-x: auto;
+}
+
+.DataViewer__Table {
+  width: 100%;
+  background: white;
+}
+
+.DataViewer__HeaderCell {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #3f51b5;
+}
+
+.DataViewer__Cell {
+  padding: 1rem 0.5rem;
+}
+
+.DataViewer__HeaderRow {
+  background: #f5f5f5;
+}
+
+.DataViewer__Row {
+  transition: background 0.2s ease;
+}
+
+.DataViewer__Row:hover {
+  background: #fafafa;
+}
+
+.DataViewer__Chip {
+  font-size: 0.75rem;
+  min-height: 24px;
+  padding: 4px 12px;
+}
+
+.DataViewer__Chip--Valid {
+  background: #4caf50;
+  color: white;
+}
+
+.DataViewer__Chip--Invalid {
+  background: #f44336;
+  color: white;
+}

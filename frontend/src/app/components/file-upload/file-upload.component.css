@@ -1,0 +1,93 @@
+/* FileUpload Component Styles - BEM Convention */
+.FileUpload {
+  margin-bottom: 2rem;
+}
+
+.FileUpload__Header {
+  margin-bottom: 1rem;
+}
+
+.FileUpload__Title {
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.FileUpload__Content {
+  padding: 1rem;
+}
+
+.FileUpload__DropZone {
+  position: relative;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 3rem 2rem;
+  text-align: center;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.FileUpload__DropZone:hover {
+  border-color: #3f51b5;
+  background: #f5f5ff;
+}
+
+.FileUpload__Icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: #3f51b5;
+  margin: 0 auto;
+}
+
+.FileUpload__Text {
+  margin: 1rem 0 0;
+  color: #666;
+}
+
+.FileUpload__Input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.FileUpload__SelectedFile {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #e8eaf6;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+.FileUpload__FileIcon {
+  color: #3f51b5;
+}
+
+.FileUpload__FileName {
+  flex: 1;
+  font-weight: 500;
+}
+
+.FileUpload__ClearButton {
+  color: #666;
+}
+
+.FileUpload__Progress {
+  margin-top: 1rem;
+}
+
+.FileUpload__Actions {
+  padding: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.FileUpload__Button {
+  padding: 0 2rem;
+}

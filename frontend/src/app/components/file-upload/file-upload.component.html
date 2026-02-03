@@ -1,0 +1,43 @@
+<mat-card class="FileUpload">
+  <mat-card-header class="FileUpload__Header">
+    <mat-card-title class="FileUpload__Title">Upload File</mat-card-title>
+  </mat-card-header>
+  <mat-card-content class="FileUpload__Content">
+    <div class="FileUpload__DropZone">
+      <mat-icon class="FileUpload__Icon">cloud_upload</mat-icon>
+      <p class="FileUpload__Text">Click to select or drag and drop your Excel/CSV file</p>
+      <input 
+        type="file" 
+        class="FileUpload__Input"
+        accept=".xlsx,.xls,.csv"
+        (change)="OnFileSelected($event)"
+      />
+    </div>
+
+    <div *ngIf="SelectedFile" class="FileUpload__SelectedFile">
+      <mat-icon class="FileUpload__FileIcon">description</mat-icon>
+      <span class="FileUpload__FileName">{{ SelectedFile.name }}</span>
+      <button mat-icon-button (click)="OnClear()" class="FileUpload__ClearButton">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <mat-progress-bar 
+      *ngIf="IsUploading" 
+      mode="determinate" 
+      [value]="UploadProgress"
+      class="FileUpload__Progress"
+    ></mat-progress-bar>
+  </mat-card-content>
+  <mat-card-actions class="FileUpload__Actions">
+    <button 
+      mat-raised-button 
+      color="primary" 
+      [disabled]="!SelectedFile || IsUploading"
+      (click)="OnUpload()"
+      class="FileUpload__Button"
+    >
+      Upload File
+    </button>
+  </mat-card-actions>
+</mat-card>

@@ -1,0 +1,41 @@
+<mat-card class="DataViewer">
+  <mat-card-header class="DataViewer__Header">
+    <mat-card-title class="DataViewer__Title">Data Preview</mat-card-title>
+  </mat-card-header>
+  <mat-card-content class="DataViewer__Content">
+    <div class="DataViewer__TableContainer">
+      <table mat-table [dataSource]="DataSource" class="DataViewer__Table">
+        <ng-container matColumnDef="Id">
+          <th mat-header-cell *matHeaderCellDef class="DataViewer__HeaderCell">ID</th>
+          <td mat-cell *matCellDef="let row" class="DataViewer__Cell">{{ row.Id }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="Name">
+          <th mat-header-cell *matHeaderCellDef class="DataViewer__HeaderCell">Name</th>
+          <td mat-cell *matCellDef="let row" class="DataViewer__Cell">{{ row.Name }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="Email">
+          <th mat-header-cell *matHeaderCellDef class="DataViewer__HeaderCell">Email</th>
+          <td mat-cell *matCellDef="let row" class="DataViewer__Cell">{{ row.Email }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="Status">
+          <th mat-header-cell *matHeaderCellDef class="DataViewer__HeaderCell">Status</th>
+          <td mat-cell *matCellDef="let row" class="DataViewer__Cell">
+            <mat-chip 
+              [class.DataViewer__Chip--Valid]="row.Status === 'Valid'"
+              [class.DataViewer__Chip--Invalid]="row.Status === 'Invalid'"
+              class="DataViewer__Chip"
+            >
+              {{ row.Status }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="DisplayedColumns" class="DataViewer__HeaderRow"></tr>
+        <tr mat-row *matRowDef="let row; columns: DisplayedColumns" class="DataViewer__Row"></tr>
+      </table>
+    </div>
+  </mat-card-content>
+</mat-card>
