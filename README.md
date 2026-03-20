@@ -1,12 +1,12 @@
 # Extractor-Data
 
-Extractor y transformador de datos Excel (XLSX/XLS/CSV) a SQL. Full-stack monorepo construido con Angular 17+ y Node.js/Express.
+Extractor y transformador de datos Excel (XLSX/XLS/CSV) a SQL. Full-stack monorepo construido con Angular 21+ y Node.js/Express.
 
 ## Requisitos
 
-- Node.js 18+
+- Node.js 20+
 - npm 9+ o pnpm 8+
-- Angular CLI 17+ (`npm install -g @angular/cli@17`)
+- Angular CLI 21+ (`npm install -g @angular/cli@21`)
 
 ## Inicio Rápido
 
@@ -35,7 +35,7 @@ cd backend && npm install && npm run dev
 
 ## Stack
 
-- **Frontend**: Angular 17+, @angular/material, xlsx, RxJS, Prism.js/Highlight.js, CSS nativo
+- **Frontend**: Angular 21+, @angular/material, xlsx, RxJS, Prism.js/Highlight.js, CSS nativo
 - **Backend**: Node.js 18+, Express
 - **Almacenamiento**: LocalStorage (frontend), base de datos o caché (backend)
 - **Validación**: Archivos hasta 10MB, formatos .xlsx, .xls, .csv
