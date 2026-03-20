@@ -155,7 +155,7 @@
     flex-direction: column;
     align-items: center;
     gap: 1.5rem;
-    border: 2px dashed var(--border-in);
+    border: 2px dashed var(--border);
     border-radius: var(--rad-lg);
     background-color: var(--bg-subtle);
     padding: 4rem 1.5rem;
@@ -213,7 +213,7 @@
     color: var(--tx-body);
     font-size: 0.875rem;
     font-weight: 700;
-    border: 1px solid var(--border-in);
+    border: 1px solid var(--border);
     border-radius: var(--rad-md);
     cursor: pointer;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -232,14 +232,16 @@
 }
 
 .options-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
-    align-items: start;
+    justify-content: center;
+    align-items: center;
     margin-top: 2.5rem;
 }
 
 .field {
+    max-width: 15rem;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -263,7 +265,7 @@
     font-family: var(--font);
     color: var(--tx-body);
     background-color: var(--bg-card);
-    border: 1px solid var(--border-in);
+    border: 1px solid var(--border);
     border-radius: var(--rad-md);
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -315,7 +317,7 @@
 .progress-block__track {
     width: 100%;
     height: 0.625rem;
-    background-color: var(--track);
+    background-color: var(--bg-page);
     border-radius: var(--rad-full);
     overflow: hidden;
 }
