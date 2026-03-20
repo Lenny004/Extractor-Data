@@ -1,0 +1,33 @@
+---
+description: Convenciones generales del proyecto Extractor-Data
+alwaysApply: true
+---
+
+# Convenciones del Proyecto
+
+## Estructura de Carpetas
+
+- `components/`: Componentes reutilizables (PascalCase, sufijo Component)
+- `services/`: Servicios (camelCase, sufijo Service)
+- `models/`: Interfaces, tipos, DTOs
+- `utils/`: Funciones puras, helpers
+- `core/`: Singleton services, guards, interceptors
+- `shared/`: Módulos compartidos
+- `styles/`: Variables CSS, mixins, reset
+
+## Nomenclatura
+
+| Tipo | Convención | Ejemplo archivo |
+|------|------------|-----------------|
+| Componente | PascalCase | `UploadComponent`, `upload.component.ts` |
+| Servicio | camelCase | `excelService`, `excel.service.ts` |
+| Modelo | PascalCase | `ExcelRow`, `excel-row.model.ts` |
+| Utilidad | camelCase | `formatDate`, `format-date.util.ts` |
+
+## Commits
+
+Usar Conventional Commits: `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`.
+
+## Versionado
+
+SemVer: MAJOR.MINOR.PATCH.

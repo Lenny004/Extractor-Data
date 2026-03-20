@@ -1,0 +1,6 @@
+/* Estilos globales - Extractor-Data */
+@import 'app/styles/_variables.css';
+@import 'app/styles/_reset.css';
+
+/* Angular Material */
+@import '@angular/material/prebuilt-themes/indigo-pink.css';

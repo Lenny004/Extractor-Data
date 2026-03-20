@@ -1,0 +1,13 @@
+{
+  "name": "extractor-data",
+  "version": "0.1.0",
+  "description": "Extractor y transformador de datos Excel a SQL",
+  "private": true,
+  "scripts": {
+    "frontend": "cd frontend && npm start",
+    "frontend:install": "cd frontend && npm install",
+    "backend": "cd backend && npm run dev",
+    "backend:install": "cd backend && npm install",
+    "install:all": "npm run frontend:install && npm run backend:install"
+  }
+}

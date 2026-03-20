@@ -1,2 +1,45 @@
 # Extractor-Data
-Extractor y transformador de datos Excel (XLSX/CSV) a SQL. Full-stack monorepo construido con Angular 17+ (@angular/material, RxJS) y Node.js/Express. Incluye validación de archivos, procesamiento local y estándares de desarrollo profesional
+
+Extractor y transformador de datos Excel (XLSX/XLS/CSV) a SQL. Full-stack monorepo construido con Angular 17+ y Node.js/Express.
+
+## Requisitos
+
+- Node.js 18+
+- npm 9+ o pnpm 8+
+- Angular CLI 17+ (`npm install -g @angular/cli@17`)
+
+## Inicio Rápido
+
+```bash
+# Clonar
+git clone <url> Extractor-Data && cd Extractor-Data
+
+# Frontend
+cd frontend && npm install && npm start
+
+# Backend (en otra terminal)
+cd backend && npm install && npm run dev
+```
+
+- **Frontend**: http://localhost:4200  
+- **Backend**: http://localhost:3000  
+
+## Documentación
+
+| Documento | Descripción |
+|-----------|-------------|
+| [docs/SETUP.md](docs/SETUP.md) | Guía de instalación paso a paso |
+| [docs/STRUCTURE.md](docs/STRUCTURE.md) | Estructura de carpetas del proyecto |
+| [docs/API.md](docs/API.md) | Endpoints de la API (backend) |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Guía de contribución y estándares |
+
+## Stack
+
+- **Frontend**: Angular 17+, @angular/material, xlsx, RxJS, Prism.js/Highlight.js, CSS nativo
+- **Backend**: Node.js 18+, Express
+- **Almacenamiento**: LocalStorage (frontend), base de datos o caché (backend)
+- **Validación**: Archivos hasta 10MB, formatos .xlsx, .xls, .csv
+
+## Versionado
+
+[SemVer](https://semver.org/) (MAJOR.MINOR.PATCH).

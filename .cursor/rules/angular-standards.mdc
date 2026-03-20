@@ -1,0 +1,28 @@
+---
+description: Estándares Angular para Extractor-Data
+globs: frontend/**/*.ts
+alwaysApply: false
+---
+
+# Estándares Angular
+
+## Componentes
+
+- Usar `standalone: true` cuando sea posible (Angular 17+)
+- Un componente por archivo
+- Nombre del archivo: `nombre.component.ts` (kebab-case)
+
+## Servicios
+
+- Inyectar con `inject()` o constructor
+- Servicios con `providedIn: 'root'` salvo que requieran scope específico
+
+## RxJS
+
+- Desuscribir con `takeUntilDestroyed()` o `async` pipe
+- Evitar subscribes anidados; usar `switchMap`, `mergeMap` según caso
+
+## Material
+
+- Importar solo los módulos de Material necesarios
+- Usar componentes Material para formularios y tablas

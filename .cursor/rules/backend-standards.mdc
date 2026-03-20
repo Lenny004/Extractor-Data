@@ -1,0 +1,24 @@
+---
+description: Estándares Node.js/Express para Extractor-Data
+globs: backend/**/*.ts
+alwaysApply: false
+---
+
+# Estándares Backend
+
+## Rutas
+
+- Agrupar por recurso en `routes/`
+- Usar controladores en `controllers/`
+- Documentar endpoints en `docs/API.md`
+
+## Middleware
+
+- CORS configurado para origen del frontend
+- Validación de archivos: max 10MB, formatos .xlsx, .xls, .csv
+- Manejo centralizado de errores
+
+## Errores
+
+- Respuestas consistentes: `{ success, data?, error?, message? }`
+- Códigos HTTP apropiados (400, 404, 500)

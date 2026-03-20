@@ -1,0 +1,27 @@
+---
+description: Guía de CSS nativo para Extractor-Data
+globs: frontend/**/*.css
+alwaysApply: false
+---
+
+# Guía CSS Nativo
+
+## Variables
+
+Definir en `styles/_variables.css`:
+- Colores (primario, secundario, error, éxito)
+- Espaciado (--spacing-xs a --spacing-xl)
+- Breakpoints (--bp-mobile, --bp-tablet, --bp-desktop)
+- Tipografía (--font-family, --font-size-*)
+
+## Convención BEM
+
+- Bloque: `.upload-form`
+- Elemento: `.upload-form__input`
+- Modificador: `.upload-form__input--error`
+
+## Organización
+
+- Un archivo CSS por componente
+- Estilos globales en `styles/`
+- No usar Tailwind; solo CSS nativo
