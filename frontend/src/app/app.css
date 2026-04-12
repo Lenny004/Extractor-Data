@@ -34,6 +34,11 @@
     margin: 0 auto;
 }
 
+/* Paso 3: más ancho para tablas con muchas columnas */
+.main__content--wide {
+    max-width: min(100%, 88rem);
+}
+
 .side-menu__header {
     padding: 1.5rem;
 }
@@ -901,6 +906,90 @@
 
 .col-table__empty .material-symbols-outlined {
     font-size: 2rem;
+}
+
+.alert-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--rad-md);
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.alert-banner .material-symbols-outlined {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.alert-banner--error {
+    background-color: color-mix(in srgb, var(--error, #c62828) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--error, #c62828) 35%, transparent);
+    color: var(--error, #b71c1c);
+}
+
+.ws-header {
+    margin-bottom: 1rem;
+}
+
+.ws-header__warn {
+    color: var(--tx-muted);
+    font-weight: 600;
+}
+
+.ws-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--rad-md);
+    margin-bottom: 1rem;
+    background-color: var(--bg-card);
+}
+
+.ws-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.ws-table__th,
+.ws-table__td {
+    padding: 0.625rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    white-space: nowrap;
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ws-table__th {
+    background-color: var(--bg-subtle);
+    font-weight: 700;
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--tx-muted);
+}
+
+.ws-table__th--num,
+.ws-table__td--num {
+    width: 2.5rem;
+    max-width: 2.5rem;
+    text-align: right;
+    color: var(--tx-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.ws-table tbody tr:hover {
+    background-color: var(--primary-lt);
+}
+
+.ws-table__empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--tx-muted);
 }
 
 .col-pagination-bar {

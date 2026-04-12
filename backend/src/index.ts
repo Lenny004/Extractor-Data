@@ -13,6 +13,56 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+/** Tiempo máximo que un archivo subido permanece en disco (por archivo, desde la subida). */
+const UPLOAD_MAX_AGE_MS = 120000;
+/** Frecuencia del barrido de limpieza (también se ejecuta al arrancar el servidor). */
+const UPLOAD_CLEANUP_INTERVAL_MS = Number(process.env.UPLOAD_CLEANUP_INTERVAL_MS) || 5 * 60 * 1000;
+
+const UPLOAD_FILENAME_TS = /^(\d+)-/;
+
+function uploadTimestampMs(filename: string, stats: fs.Stats): number {
+  const m = filename.match(UPLOAD_FILENAME_TS);
+  if (m) {
+    const ts = parseInt(m[1], 10);
+    if (!Number.isNaN(ts)) return ts;
+  }
+  const birth = stats.birthtimeMs;
+  return birth > 0 ? birth : stats.mtimeMs;
+}
+
+function cleanupExpiredUploads(): void {
+  const now = Date.now();
+  let removed = 0;
+  try {
+    const names = fs.readdirSync(uploadsDir);
+    for (const name of names) {
+      const filePath = path.join(uploadsDir, name);
+      let stats: fs.Stats;
+      try {
+        stats = fs.statSync(filePath);
+      } catch {
+        continue;
+      }
+      if (!stats.isFile()) continue;
+      const uploadedAt = uploadTimestampMs(name, stats);
+      if (now - uploadedAt <= UPLOAD_MAX_AGE_MS) continue;
+      try {
+        fs.unlinkSync(filePath);
+        removed += 1;
+      } catch {
+        // Ya borrado o bloqueado por otro proceso
+      }
+    }
+    if (removed > 0) {
+      console.log(
+        `[uploads] Eliminados ${removed} archivo(s) caducados (TTL ${Math.round(UPLOAD_MAX_AGE_MS / 60000)} min)`
+      );
+    }
+  } catch (err) {
+    console.error('[uploads] Error al limpiar caducados:', err);
+  }
+}
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename: (_req, file, cb) => {
@@ -130,6 +180,79 @@ app.get('/api/columns/:filename', (req, res) => {
   }
 });
 
+/** Máximo de filas devueltas en una extracción (evita respuestas enormes en memoria). */
+const MAX_EXTRACT_ROWS = 5000;
+
+app.post('/api/extract', (req, res) => {
+  const filename = req.body?.filename as string | undefined;
+  const headerRow = parseInt(String(req.body?.headerRow), 10) || 1;
+  const columnIndices = req.body?.columnIndices as unknown;
+
+  if (!filename || typeof filename !== 'string' || /[/\\]/.test(filename)) {
+    res.status(400).json({ success: false, message: 'Nombre de archivo inválido' });
+    return;
+  }
+
+  if (!Array.isArray(columnIndices) || columnIndices.length === 0) {
+    res.status(400).json({ success: false, message: 'Indica al menos una columna (columnIndices)' });
+    return;
+  }
+
+  const indices = columnIndices
+    .map((i) => parseInt(String(i), 10))
+    .filter((i) => !Number.isNaN(i) && i >= 0);
+
+  if (indices.length === 0) {
+    res.status(400).json({ success: false, message: 'Índices de columna no válidos' });
+    return;
+  }
+
+  const filePath = path.join(uploadsDir, filename);
+  if (!fs.existsSync(filePath)) {
+    res.status(404).json({ success: false, message: 'Archivo no encontrado' });
+    return;
+  }
+
+  try {
+    const workbook = XLSX.readFile(filePath, { cellDates: true });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const data: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
+
+    if (data.length < headerRow) {
+      res.status(400).json({ success: false, message: 'La fila de encabezado excede el número de filas del archivo' });
+      return;
+    }
+
+    const headers = data[headerRow - 1] as unknown[];
+    const dataRows = data.slice(headerRow);
+    const maxIndex = Math.max(...indices);
+    if (maxIndex >= headers.length) {
+      res.status(400).json({ success: false, message: 'Algún índice de columna está fuera de rango' });
+      return;
+    }
+
+    const headerLabels = indices.map((i) => String(headers[i] || `Column_${i + 1}`));
+    const limitedRows = dataRows.slice(0, MAX_EXTRACT_ROWS);
+    const rows = limitedRows.map((row) =>
+      indices.map((colIdx) => formatValue((row as unknown[])[colIdx] ?? ''))
+    );
+
+    res.json({
+      success: true,
+      data: {
+        sheetName,
+        headers: headerLabels,
+        rows,
+        totalRowsInFile: dataRows.length,
+        truncated: dataRows.length > MAX_EXTRACT_ROWS,
+      },
+    });
+  } catch {
+    res.status(500).json({ success: false, message: 'Error al extraer datos del archivo' });
+  }
+});
+
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err instanceof multer.MulterError) {
     const messages: Record<string, string> = {
@@ -144,4 +267,6 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 app.listen(PORT, () => {
   console.log(`Backend running at http://localhost:${PORT}`);
+  cleanupExpiredUploads();
+  setInterval(cleanupExpiredUploads, UPLOAD_CLEANUP_INTERVAL_MS);
 });

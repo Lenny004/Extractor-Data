@@ -1,18 +1,46 @@
-import { ChangeDetectionStrategy, Component, signal, computed, ElementRef, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpClient, HttpEventType } from '@angular/common/http';
-import { inject } from '@angular/core';
 
 import { FooterComponent } from './components/footer/footer';
 import { HeaderComponent } from './components/header/header';
 
-type UploadState = 'idle' | 'uploading' | 'validating' | 'done' | 'error';
+/** URL base del backend (desarrollo local). */
+const URL_SERVIDOR = 'http://localhost:3000';
 
-interface ColumnInfo {
-  index: number;
-  name: string;
-  type: string;
-  sampleData: string;
-  selected: boolean;
+/**
+ * Idea simple (tres “cajas” en pantalla):
+ *
+ * 1) Subes el Excel → el servidor lo guarda y te da un nombre interno del archivo (`idArchivoEnServidor`).
+ * 2) Ves la lista de columnas y marcas cuáles quieres (`elegida: true/false`).
+ * 3) Pides la tabla al servidor (`POST /api/extract`) con: ese nombre interno, la fila de títulos, y los
+ *    números de columna elegidos. El servidor devuelve `titulosTabla` + `filasTabla`; la pantalla solo las pinta.
+ *
+ * Los nombres de variables/métodos están en español para leer el flujo sin diccionario técnico.
+ */
+
+/** Estados de la barrita mientras subes el archivo (caja 1). */
+type EstadoSubida = 'idle' | 'uploading' | 'validating' | 'done' | 'error';
+
+/**
+ * Una columna del Excel. Lo que viene del servidor usa `index`, `name`, etc.; aquí lo guardamos con nombres claros.
+ * `posicion` = qué columna es (0 = primera). `elegida` = si entra en la tabla del paso 3.
+ */
+interface ColumnaExcel {
+  posicion: number;
+  titulo: string;
+  tipo: string;
+  ejemploCelda: string;
+  elegida: boolean;
 }
 
 @Component({
@@ -20,271 +48,388 @@ interface ColumnInfo {
   imports: [HeaderComponent, FooterComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
-  private http = inject(HttpClient);
-  private fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
+  private readonly http = inject(HttpClient);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly inputArchivo = viewChild<ElementRef<HTMLInputElement>>('inputArchivo');
 
-  currentStep = signal(1);
+  /** 1 = subir, 2 = columnas, 3 = tabla final. */
+  pasoVisual = signal(1);
 
-  // Step 1 — Upload
-  uploadState = signal<UploadState>('idle');
-  progress = signal(0);
-  fileName = signal('');
-  fileSize = signal('');
-  errorMessage = signal('');
-  isDragOver = signal(false);
-  storedFilename = signal('');
-  headerRow = signal(1);
+  // ----- Caja 1: subida -----
+  estadoSubida = signal<EstadoSubida>('idle');
+  porcentajeBarra = signal(0);
+  nombreArchivo = signal('');
+  tamanoArchivoVista = signal('');
+  mensajeError = signal('');
+  arrastrandoArchivo = signal(false);
+  /** Nombre interno del archivo en el servidor (carpeta uploads), no el nombre bonito del usuario. */
+  idArchivoEnServidor = signal('');
+  /** Fila del Excel donde están los títulos (normalmente 1). */
+  filaEncabezados = signal(1);
 
-  progressLabel = computed(() => {
-    const state = this.uploadState();
-    if (state === 'uploading') return 'Subiendo archivo...';
-    if (state === 'validating') return 'Procesando datos...';
-    if (state === 'done') return 'Completado';
-    if (state === 'error') return 'Error';
+  textoBarraProgreso = computed(() => {
+    const e = this.estadoSubida();
+    if (e === 'uploading') return 'Subiendo archivo...';
+    if (e === 'validating') return 'Procesando datos...';
+    if (e === 'done') return 'Completado';
+    if (e === 'error') return 'Error';
     return '';
   });
 
-  progressStatus = computed(() => {
-    const state = this.uploadState();
-    if (state === 'uploading') return 'Transfiriendo archivo al servidor';
-    if (state === 'validating') return 'Validando estructura de la hoja';
-    if (state === 'done') return 'Archivo procesado correctamente';
-    if (state === 'error') return this.errorMessage();
+  detalleBarraProgreso = computed(() => {
+    const e = this.estadoSubida();
+    if (e === 'uploading') return 'Transfiriendo archivo al servidor';
+    if (e === 'validating') return 'Validando estructura de la hoja';
+    if (e === 'done') return 'Archivo procesado correctamente';
+    if (e === 'error') return this.mensajeError();
     return '';
   });
 
-  showProgress = computed(() => this.uploadState() !== 'idle');
+  debeMostrarBarraProgreso = computed(() => this.estadoSubida() !== 'idle');
 
-  // Step 2 — Column selection
-  columns = signal<ColumnInfo[]>([]);
-  searchQuery = signal('');
-  currentPage = signal(1);
-  sheetName = signal('');
-  totalRows = signal(0);
-  columnsLoading = signal(false);
-  readonly pageSize = 5;
+  // ----- Caja 2: columnas -----
+  listaColumnas = signal<ColumnaExcel[]>([]);
+  textoBuscarColumnas = signal('');
+  paginaListaColumnas = signal(1);
+  nombreHojaCalculo = signal('');
+  filasDeDatosEnArchivo = signal(0);
+  cargandoListaColumnas = signal(false);
+  readonly columnasPorPaginaEnPantalla = 5;
 
-  selectedCount = computed(() => this.columns().filter(c => c.selected).length);
-  totalColumns = computed(() => this.columns().length);
+  /** Números de columna (0,1,2…) de las filas con casilla marcada; eso se manda al paso 3. */
+  posicionesColumnasElegidas = computed(() =>
+    this.listaColumnas().filter((c) => c.elegida).map((c) => c.posicion)
+  );
 
-  filteredColumns = computed(() => {
-    const query = this.searchQuery().toLowerCase();
-    if (!query) return this.columns();
-    return this.columns().filter(c =>
-      c.name.toLowerCase().includes(query) ||
-      c.sampleData.toLowerCase().includes(query)
+  cuantasColumnasElegidas = computed(() => this.posicionesColumnasElegidas().length);
+  totalColumnasDetectadas = computed(() => this.listaColumnas().length);
+
+  columnasQueCoincidenConBusqueda = computed(() => {
+    const t = this.textoBuscarColumnas().toLowerCase();
+    if (!t) return this.listaColumnas();
+    return this.listaColumnas().filter(
+      (c) =>
+        c.titulo.toLowerCase().includes(t) || c.ejemploCelda.toLowerCase().includes(t)
     );
   });
 
-  paginatedColumns = computed(() => {
-    const filtered = this.filteredColumns();
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return filtered.slice(start, start + this.pageSize);
+  columnasPaginaActual = computed(() => {
+    const lista = this.columnasQueCoincidenConBusqueda();
+    const inicio = (this.paginaListaColumnas() - 1) * this.columnasPorPaginaEnPantalla;
+    return lista.slice(inicio, inicio + this.columnasPorPaginaEnPantalla);
   });
 
-  totalPages = computed(() => Math.ceil(this.filteredColumns().length / this.pageSize) || 1);
+  totalPaginasListaColumnas = computed(
+    () =>
+      Math.ceil(this.columnasQueCoincidenConBusqueda().length / this.columnasPorPaginaEnPantalla) || 1
+  );
 
-  pageNumbers = computed(() => {
-    const total = this.totalPages();
-    const current = this.currentPage();
+  numerosPaginaParaBotones = computed(() => {
+    const total = this.totalPaginasListaColumnas();
+    const actual = this.paginaListaColumnas();
 
     if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
 
-    const pages: (number | string)[] = [1];
-    if (current > 3) pages.push('...');
+    const paginas: (number | string)[] = [1];
+    if (actual > 3) paginas.push('...');
 
-    const start = Math.max(2, current - 1);
-    const end = Math.min(total - 1, current + 1);
-    for (let i = start; i <= end; i++) pages.push(i);
+    const desde = Math.max(2, actual - 1);
+    const hasta = Math.min(total - 1, actual + 1);
+    for (let i = desde; i <= hasta; i++) paginas.push(i);
 
-    if (current < total - 2) pages.push('...');
-    pages.push(total);
-    return pages;
+    if (actual < total - 2) paginas.push('...');
+    paginas.push(total);
+    return paginas;
   });
 
-  typeIcon(type: string): string {
-    const icons: Record<string, string> = {
-      number: 'tag', date: 'calendar_today', text: 'match_case', boolean: 'toggle_on',
+  // ----- Caja 3: respuesta del servidor (tabla) -----
+  esperandoRespuestaTabla = signal(false);
+  mensajeErrorTabla = signal('');
+  nombreHojaEnResultado = signal('');
+  titulosTabla = signal<string[]>([]);
+  filasTabla = signal<string[][]>([]);
+  resultadoTruncado = signal(false);
+  totalFilasQueHayEnExcel = signal(0);
+
+  iconoTipoColumna(tipo: string): string {
+    const mapa: Record<string, string> = {
+      number: 'tag',
+      date: 'calendar_today',
+      text: 'match_case',
+      boolean: 'toggle_on',
     };
-    return icons[type] ?? 'help';
+    return mapa[tipo] ?? 'help';
   }
 
-  // Step 1 methods
-
-  onDragOver(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragOver.set(true);
+  cuandoArrastraEncima(evento: DragEvent) {
+    evento.preventDefault();
+    evento.stopPropagation();
+    this.arrastrandoArchivo.set(true);
   }
 
-  onDragLeave(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragOver.set(false);
+  cuandoArrastraFuera(evento: DragEvent) {
+    evento.preventDefault();
+    evento.stopPropagation();
+    this.arrastrandoArchivo.set(false);
   }
 
-  onDrop(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragOver.set(false);
-    const files = event.dataTransfer?.files;
-    if (files?.length) this.handleFile(files[0]);
+  cuandoSueltaArchivo(evento: DragEvent) {
+    evento.preventDefault();
+    evento.stopPropagation();
+    this.arrastrandoArchivo.set(false);
+    const archivos = evento.dataTransfer?.files;
+    if (archivos?.length) this.procesarArchivoSubida(archivos[0]);
   }
 
-  onFileSelected(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (input.files?.length) this.handleFile(input.files[0]);
+  cuandoEligeArchivo(evento: Event) {
+    const input = evento.target as HTMLInputElement;
+    if (input.files?.length) this.procesarArchivoSubida(input.files[0]);
   }
 
-  triggerFileInput() {
-    this.fileInput()?.nativeElement.click();
+  abrirSelectorArchivo() {
+    this.inputArchivo()?.nativeElement.click();
   }
 
-  onHeaderRowChange(event: Event) {
-    const value = parseInt((event.target as HTMLInputElement).value) || 1;
-    this.headerRow.set(Math.max(1, value));
+  cuandoCambiaFilaEncabezado(evento: Event) {
+    const valor = parseInt((evento.target as HTMLInputElement).value) || 1;
+    this.filaEncabezados.set(Math.max(1, valor));
   }
 
-  private formatSize(bytes: number): string {
+  quitarArchivoYEmpezarDeNuevo() {
+    this.estadoSubida.set('idle');
+    this.porcentajeBarra.set(0);
+    this.nombreArchivo.set('');
+    this.tamanoArchivoVista.set('');
+    this.mensajeError.set('');
+    this.idArchivoEnServidor.set('');
+    this.limpiarDatosTabla();
+    const input = this.inputArchivo()?.nativeElement;
+    if (input) input.value = '';
+  }
+
+  private formatearTamano(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  private handleFile(file: File) {
-    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-    if (!['xlsx', 'xls', 'csv'].includes(ext)) {
-      this.uploadState.set('error');
-      this.progress.set(0);
-      this.errorMessage.set('Formato no soportado. Usa .xlsx, .xls o .csv');
+  private procesarArchivoSubida(archivo: File) {
+    const extension = archivo.name.split('.').pop()?.toLowerCase() ?? '';
+    if (!['xlsx', 'xls', 'csv'].includes(extension)) {
+      this.estadoSubida.set('error');
+      this.porcentajeBarra.set(0);
+      this.mensajeError.set('Formato no soportado. Usa .xlsx, .xls o .csv');
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      this.uploadState.set('error');
-      this.progress.set(0);
-      this.errorMessage.set('El archivo excede el tamaño máximo de 10MB');
+    if (archivo.size > 10 * 1024 * 1024) {
+      this.estadoSubida.set('error');
+      this.porcentajeBarra.set(0);
+      this.mensajeError.set('El archivo excede el tamaño máximo de 10MB');
       return;
     }
 
-    this.fileName.set(file.name);
-    this.fileSize.set(this.formatSize(file.size));
-    this.uploadState.set('uploading');
-    this.progress.set(0);
-    this.errorMessage.set('');
+    this.nombreArchivo.set(archivo.name);
+    this.tamanoArchivoVista.set(this.formatearTamano(archivo.size));
+    this.estadoSubida.set('uploading');
+    this.porcentajeBarra.set(0);
+    this.mensajeError.set('');
 
-    const formData = new FormData();
-    formData.append('file', file);
+    const datosFormulario = new FormData();
+    datosFormulario.append('file', archivo);
 
-    this.http.post<{ success: boolean; data: { storedName: string }; message: string }>(
-      'http://localhost:3000/api/upload', formData, {
-        reportProgress: true,
-        observe: 'events',
-      }
-    ).subscribe({
-      next: (event) => {
-        if (event.type === HttpEventType.UploadProgress && event.total) {
-          this.progress.set(Math.round((event.loaded / event.total) * 70));
-        }
-        if (event.type === HttpEventType.Response) {
-          const body = event.body;
-          if (body?.data?.storedName) {
-            this.storedFilename.set(body.data.storedName);
-          }
-          this.uploadState.set('validating');
-          this.progress.set(75);
-          setTimeout(() => this.progress.set(85), 400);
-          setTimeout(() => this.progress.set(95), 800);
-          setTimeout(() => {
-            this.progress.set(100);
-            this.uploadState.set('done');
-          }, 1200);
-        }
-      },
-      error: (err) => {
-        this.uploadState.set('error');
-        this.progress.set(0);
-        const message = err?.error?.message
-          || (err.status === 0 ? 'No se pudo conectar al servidor. Verifica que el backend esté corriendo.' : 'Error al subir el archivo');
-        this.errorMessage.set(message);
-      },
-    });
-  }
-
-  resetUpload() {
-    this.uploadState.set('idle');
-    this.progress.set(0);
-    this.fileName.set('');
-    this.fileSize.set('');
-    this.errorMessage.set('');
-    this.storedFilename.set('');
-    const input = this.fileInput()?.nativeElement;
-    if (input) input.value = '';
-  }
-
-  // Step 2 methods
-
-  goToStep2() {
-    this.currentStep.set(2);
-    this.fetchColumns();
-  }
-
-  backToUpload() {
-    this.currentStep.set(1);
-    this.columns.set([]);
-    this.searchQuery.set('');
-    this.currentPage.set(1);
-  }
-
-  private fetchColumns() {
-    this.columnsLoading.set(true);
-    const url = `http://localhost:3000/api/columns/${this.storedFilename()}?headerRow=${this.headerRow()}`;
-
-    this.http.get<{ success: boolean; data: { sheetName: string; totalRows: number; columns: Omit<ColumnInfo, 'selected'>[] } }>(url)
+    this.http
+      .post<{ success: boolean; data: { storedName: string }; message: string }>(
+        `${URL_SERVIDOR}/api/upload`,
+        datosFormulario,
+        { reportProgress: true, observe: 'events' }
+      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (res) => {
-          if (res.success) {
-            this.columns.set(res.data.columns.map(c => ({ ...c, selected: true })));
-            this.sheetName.set(res.data.sheetName);
-            this.totalRows.set(res.data.totalRows);
+        next: (evento) => {
+          if (evento.type === HttpEventType.UploadProgress && evento.total) {
+            this.porcentajeBarra.set(Math.round((evento.loaded / evento.total) * 70));
           }
-          this.columnsLoading.set(false);
+          if (evento.type === HttpEventType.Response) {
+            const cuerpo = evento.body;
+            if (cuerpo?.data?.storedName) {
+              this.idArchivoEnServidor.set(cuerpo.data.storedName);
+            }
+            this.estadoSubida.set('validating');
+            this.porcentajeBarra.set(75);
+            setTimeout(() => this.porcentajeBarra.set(85), 400);
+            setTimeout(() => this.porcentajeBarra.set(95), 800);
+            setTimeout(() => {
+              this.porcentajeBarra.set(100);
+              this.estadoSubida.set('done');
+            }, 1200);
+          }
         },
-        error: () => {
-          this.columnsLoading.set(false);
+        error: (err) => {
+          this.estadoSubida.set('error');
+          this.porcentajeBarra.set(0);
+          const texto =
+            err?.error?.message ||
+            (err.status === 0
+              ? 'No se pudo conectar al servidor. Verifica que el backend esté corriendo.'
+              : 'Error al subir el archivo');
+          this.mensajeError.set(texto);
         },
       });
   }
 
-  toggleColumn(index: number) {
-    this.columns.update(cols =>
-      cols.map(c => c.index === index ? { ...c, selected: !c.selected } : c)
+  irPasoElegirColumnas() {
+    this.pasoVisual.set(2);
+    this.pedirListaColumnasAlServidor();
+  }
+
+  volverPasoSubirArchivo() {
+    this.pasoVisual.set(1);
+    this.listaColumnas.set([]);
+    this.textoBuscarColumnas.set('');
+    this.paginaListaColumnas.set(1);
+    this.limpiarDatosTabla();
+  }
+
+  volverPasoElegirColumnas() {
+    this.pasoVisual.set(2);
+    this.limpiarDatosTabla();
+  }
+
+  pedirTablaAlServidorYMostrarPaso3() {
+    const columnasQueQuiero = this.posicionesColumnasElegidas();
+    if (columnasQueQuiero.length === 0) return;
+
+    this.esperandoRespuestaTabla.set(true);
+    this.mensajeErrorTabla.set('');
+
+    this.http
+      .post<{
+        success: boolean;
+        message?: string;
+        data?: {
+          sheetName: string;
+          headers: string[];
+          rows: string[][];
+          totalRowsInFile: number;
+          truncated: boolean;
+        };
+      }>(`${URL_SERVIDOR}/api/extract`, {
+        filename: this.idArchivoEnServidor(),
+        headerRow: this.filaEncabezados(),
+        columnIndices: columnasQueQuiero,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (respuesta) => {
+          this.esperandoRespuestaTabla.set(false);
+          if (respuesta.success && respuesta.data) {
+            this.nombreHojaEnResultado.set(respuesta.data.sheetName);
+            this.titulosTabla.set(respuesta.data.headers);
+            this.filasTabla.set(respuesta.data.rows);
+            this.resultadoTruncado.set(respuesta.data.truncated);
+            this.totalFilasQueHayEnExcel.set(respuesta.data.totalRowsInFile);
+            this.pasoVisual.set(3);
+          } else {
+            this.mensajeErrorTabla.set(respuesta.message || 'No se pudo extraer los datos');
+          }
+        },
+        error: (err) => {
+          this.esperandoRespuestaTabla.set(false);
+          const delServidor = err?.error?.message;
+          const codigo = err?.status != null ? err.status : '';
+          const sinRed = err?.status === 0;
+          this.mensajeErrorTabla.set(
+            delServidor ||
+              (sinRed
+                ? 'No hubo respuesta del servidor. ¿Está encendido el backend en el puerto 3000?'
+                : `Fallo al pedir la tabla${codigo !== '' ? ` (HTTP ${codigo})` : ''}. Si ves 404, la ruta debe ser POST /api/extract.`)
+          );
+        },
+      });
+  }
+
+  abrirVistaPreviaDesdeMenu() {
+    if (this.pasoVisual() === 3) return;
+    if (!this.idArchivoEnServidor() || this.listaColumnas().length === 0) return;
+    this.pedirTablaAlServidorYMostrarPaso3();
+  }
+
+  private limpiarDatosTabla() {
+    this.esperandoRespuestaTabla.set(false);
+    this.mensajeErrorTabla.set('');
+    this.nombreHojaEnResultado.set('');
+    this.titulosTabla.set([]);
+    this.filasTabla.set([]);
+    this.resultadoTruncado.set(false);
+    this.totalFilasQueHayEnExcel.set(0);
+  }
+
+  private pedirListaColumnasAlServidor() {
+    this.cargandoListaColumnas.set(true);
+    const url = `${URL_SERVIDOR}/api/columns/${this.idArchivoEnServidor()}?headerRow=${this.filaEncabezados()}`;
+
+    this.http
+      .get<{
+        success: boolean;
+        data: {
+          sheetName: string;
+          totalRows: number;
+          columns: { index: number; name: string; type: string; sampleData: string }[];
+        };
+      }>(url)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (respuesta) => {
+          if (respuesta.success) {
+            const mapeadas: ColumnaExcel[] = respuesta.data.columns.map((c) => ({
+              posicion: c.index,
+              titulo: c.name,
+              tipo: c.type,
+              ejemploCelda: c.sampleData,
+              elegida: true,
+            }));
+            this.listaColumnas.set(mapeadas);
+            this.nombreHojaCalculo.set(respuesta.data.sheetName);
+            this.filasDeDatosEnArchivo.set(respuesta.data.totalRows);
+          }
+          this.cargandoListaColumnas.set(false);
+        },
+        error: () => {
+          this.cargandoListaColumnas.set(false);
+        },
+      });
+  }
+
+  clicEnFilaColumna(posicion: number) {
+    this.listaColumnas.update((lista) =>
+      lista.map((c) => (c.posicion === posicion ? { ...c, elegida: !c.elegida } : c))
     );
   }
 
-  selectAll() {
-    this.columns.update(cols => cols.map(c => ({ ...c, selected: true })));
+  marcarTodasLasColumnas() {
+    this.listaColumnas.update((lista) => lista.map((c) => ({ ...c, elegida: true })));
   }
 
-  deselectAll() {
-    this.columns.update(cols => cols.map(c => ({ ...c, selected: false })));
+  quitarMarcaEnTodasLasColumnas() {
+    this.listaColumnas.update((lista) => lista.map((c) => ({ ...c, elegida: false })));
   }
 
-  invertSelection() {
-    this.columns.update(cols => cols.map(c => ({ ...c, selected: !c.selected })));
+  invertirMarcadas() {
+    this.listaColumnas.update((lista) => lista.map((c) => ({ ...c, elegida: !c.elegida })));
   }
 
-  onSearch(event: Event) {
-    this.searchQuery.set((event.target as HTMLInputElement).value);
-    this.currentPage.set(1);
+  alEscribirEnBusquedaColumnas(evento: Event) {
+    this.textoBuscarColumnas.set((evento.target as HTMLInputElement).value);
+    this.paginaListaColumnas.set(1);
   }
 
-  goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages()) {
-      this.currentPage.set(page);
+  irAPaginaColumnas(numeroPagina: number) {
+    if (numeroPagina >= 1 && numeroPagina <= this.totalPaginasListaColumnas()) {
+      this.paginaListaColumnas.set(numeroPagina);
     }
   }
 }
