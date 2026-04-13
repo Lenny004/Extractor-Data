@@ -10,23 +10,24 @@
             <nav class="side-menu__nav" aria-label="Pasos de extracción">
                 <a class="side-menu__link"
                    [class.side-menu__link--active]="currentStep() === 1"
-                   (click)="currentStep() === 2 ? backToUpload() : null"
+                   [class.side-menu__link--done]="currentStep() > 1"
+                   (click)="currentStep() > 1 ? backToUpload() : null"
                    href="javascript:void(0)">
-                    <span class="material-symbols-outlined" [class.side-menu__filled-icon]="currentStep() === 1">upload_file</span>
+                    <span class="material-symbols-outlined" [class.side-menu__filled-icon]="currentStep() >= 1">upload_file</span>
                     <span>Subir</span>
                 </a>
                 <a class="side-menu__link"
                    [class.side-menu__link--active]="currentStep() === 2"
+                   [class.side-menu__link--done]="currentStep() > 2"
+                   (click)="currentStep() === 3 ? backToColumns() : null"
                    href="javascript:void(0)">
-                    <span class="material-symbols-outlined" [class.side-menu__filled-icon]="currentStep() === 2">view_column</span>
+                    <span class="material-symbols-outlined" [class.side-menu__filled-icon]="currentStep() >= 2">view_column</span>
                     <span>Selección de Columnas</span>
                 </a>
-                <a class="side-menu__link" href="javascript:void(0)">
-                    <span class="material-symbols-outlined">grid_view</span>
-                    <span>Espacio de Trabajo</span>
-                </a>
-                <a class="side-menu__link" href="javascript:void(0)">
-                    <span class="material-symbols-outlined">database</span>
+                <a class="side-menu__link"
+                   [class.side-menu__link--active]="currentStep() === 3"
+                   href="javascript:void(0)">
+                    <span class="material-symbols-outlined" [class.side-menu__filled-icon]="currentStep() === 3">database</span>
                     <span>Generador SQL</span>
                 </a>
             </nav>
@@ -39,7 +40,7 @@
             <div class="card">
                 <div class="card__step-bar">
                     <span class="card__step-badge">1</span>
-                    <span class="card__step-label">Paso 1 de 2: Fuente de Datos</span>
+                    <span class="card__step-label">Paso 1 de 3: Fuente de Datos</span>
                 </div>
 
                 <div class="card__body">
@@ -170,7 +171,7 @@
             <div class="card">
                 <div class="card__step-bar">
                     <span class="card__step-badge">2</span>
-                    <span class="card__step-label">Paso 2 de 2: Seleccionar Columnas</span>
+                    <span class="card__step-label">Paso 2 de 3: Seleccionar Columnas</span>
                 </div>
 
                 <div class="card__body">
@@ -194,7 +195,7 @@
                                 <span class="status-badge__label">ESTADO</span>
                                 <span class="status-badge__value">{{ selectedCount() }} de {{ totalColumns() }} columnas seleccionadas</span>
                             </div>
-                            <button class="btn--primary btn--compact" type="button" [disabled]="selectedCount() === 0">
+                            <button class="btn--primary btn--compact" type="button" [disabled]="selectedCount() === 0" (click)="goToStep3()">
                                 Siguiente
                                 <span class="material-symbols-outlined">arrow_forward</span>
                             </button>
@@ -302,6 +303,125 @@
                             Volver a Subir
                         </button>
                         <span class="card-footer__tip">Tip: Puedes renombrar columnas en el siguiente paso.</span>
+                    </div>
+                </div>
+            </div>
+            }
+
+            <!-- ==================== STEP 3: SQL GENERATOR ==================== -->
+            @if (currentStep() === 3) {
+            <div class="card">
+                <div class="card__step-bar">
+                    <span class="card__step-badge">3</span>
+                    <span class="card__step-label">Paso 3 de 3: Generar SQL</span>
+                </div>
+
+                <div class="card__body">
+                    <nav class="breadcrumb" aria-label="Ruta de navegación">
+                        <button class="breadcrumb__link" (click)="backToUpload()">Subir Archivo</button>
+                        <span class="material-symbols-outlined breadcrumb__sep">chevron_right</span>
+                        <button class="breadcrumb__link" (click)="backToColumns()">Columnas</button>
+                        <span class="material-symbols-outlined breadcrumb__sep">chevron_right</span>
+                        <span class="breadcrumb__current">Generador SQL</span>
+                    </nav>
+
+                    <div class="sql-header">
+                        <div class="sql-header__text">
+                            <h1 class="card-header__title">Generador SQL</h1>
+                            <p class="card-header__description">
+                                Transforma tu Excel en sentencias SQL ejecutables.
+                                El script está optimizado para rendimiento e integridad.
+                            </p>
+                        </div>
+                        @if (sqlGenerated()) {
+                            <div class="sql-stats">
+                                <span class="sql-stats__label">TOTAL SENTENCIAS</span>
+                                <div class="sql-stats__value">
+                                    <span>{{ totalStatements() | number }}</span>
+                                    <span class="material-symbols-outlined sql-stats__check">check_circle</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="sql-controls">
+                        <div class="sql-controls__field">
+                            <label class="field__label" for="table-name">Nombre de Tabla</label>
+                            <input class="field__input" id="table-name" type="text"
+                                   [value]="tableName()"
+                                   (input)="tableName.set($any($event.target).value)"
+                                   placeholder="mi_tabla" />
+                        </div>
+                        <div class="sql-controls__field">
+                            <label class="field__label" for="db-engine">Motor de Base de Datos</label>
+                            <select class="field__input field__select" id="db-engine"
+                                    [value]="dbEngine()"
+                                    (change)="dbEngine.set($any($event.target).value)">
+                                <option value="postgresql">PostgreSQL</option>
+                                <option value="mysql">MySQL</option>
+                                <option value="sqlite">SQLite</option>
+                                <option value="sqlserver">SQL Server</option>
+                            </select>
+                        </div>
+                        <div class="sql-controls__actions">
+                            <button class="btn--primary" type="button" (click)="generateSql()" [disabled]="sqlGenerating() || !tableName()">
+                                @if (sqlGenerating()) {
+                                    <span class="material-symbols-outlined sql-spin">hourglass_top</span>
+                                    Generando...
+                                } @else {
+                                    <span class="material-symbols-outlined">play_arrow</span>
+                                    Generar SQL
+                                }
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (sqlGenerated()) {
+                        <div class="sql-preview">
+                            <div class="sql-preview__header">
+                                <div class="sql-preview__file">
+                                    <span class="sql-preview__dot sql-preview__dot--red"></span>
+                                    <span class="sql-preview__dot sql-preview__dot--yellow"></span>
+                                    <span class="sql-preview__dot sql-preview__dot--green"></span>
+                                    <span class="sql-preview__filename">{{ tableName() }}.sql — Generado Exitosamente</span>
+                                </div>
+                                <div class="sql-preview__actions">
+                                    <button class="sql-preview__btn" (click)="copySql()">
+                                        <span class="material-symbols-outlined">{{ sqlCopied() ? 'check' : 'content_copy' }}</span>
+                                        {{ sqlCopied() ? 'Copiado' : 'Copiar' }}
+                                    </button>
+                                    <button class="sql-preview__btn sql-preview__btn--download" (click)="downloadSql()">
+                                        <span class="material-symbols-outlined">download</span>
+                                        Descargar .sql
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="sql-preview__code">
+                                @for (line of sqlLines(); track line.num) {
+                                    <div class="sql-line">
+                                        <span class="sql-line__num">{{ line.num }}</span>
+                                        <span class="sql-line__text">
+                                            @for (seg of line.segments; track $index) {
+                                                <span [class]="seg.cls">{{ seg.text }}</span>
+                                            }
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="card-footer card-footer--between">
+                        <button class="btn--back" type="button" (click)="backToColumns()">
+                            <span class="material-symbols-outlined">arrow_back</span>
+                            Volver a Columnas
+                        </button>
+                        @if (sqlGenerated()) {
+                            <span class="sql-ready">
+                                <span class="sql-ready__dot"></span>
+                                SCRIPT LISTO
+                            </span>
+                        }
                     </div>
                 </div>
             </div>

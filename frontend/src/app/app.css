@@ -1096,6 +1096,278 @@
     }
 }
 
+/* ==================== STEP 3: SQL GENERATOR ==================== */
+
+.sql-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.sql-header__text .card-header__title {
+    text-align: left;
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.sql-header__text .card-header__description {
+    text-align: left;
+    margin: 0;
+    font-size: 0.9375rem;
+}
+
+.sql-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 1rem 1.5rem;
+    background-color: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--rad-md);
+    flex-shrink: 0;
+}
+
+.sql-stats__label {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--tx-muted);
+}
+
+.sql-stats__value {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--tx-body);
+}
+
+.sql-stats__check {
+    color: #22c55e;
+    font-size: 1.25rem;
+}
+
+.sql-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+    background-color: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--rad-md);
+    margin-bottom: 1.5rem;
+}
+
+.sql-controls__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    flex: 1;
+}
+
+.sql-controls__field .field__label {
+    font-size: 0.8125rem;
+}
+
+.sql-controls__field .field__input {
+    height: 2.75rem;
+    font-size: 0.875rem;
+    padding: 0 1rem;
+}
+
+.field__select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+}
+
+.sql-controls__actions {
+    display: flex;
+    align-items: flex-end;
+}
+
+.sql-controls__actions .btn--primary {
+    height: 2.75rem;
+    white-space: nowrap;
+}
+
+.sql-spin {
+    animation: spin 1.5s linear infinite;
+}
+
+.sql-preview {
+    border-radius: var(--rad-lg);
+    overflow: hidden;
+    border: 1px solid #313244;
+    margin-bottom: 1.5rem;
+}
+
+.sql-preview__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    background-color: #313244;
+}
+
+.sql-preview__file {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sql-preview__dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: var(--rad-full);
+}
+
+.sql-preview__dot--red { background-color: #f38ba8; }
+.sql-preview__dot--yellow { background-color: #f9e2af; }
+.sql-preview__dot--green { background-color: #a6e3a1; }
+
+.sql-preview__filename {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #a6adc8;
+}
+
+.sql-preview__actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.sql-preview__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    background-color: #45475a;
+    border: none;
+    border-radius: var(--rad-md);
+    color: #cdd6f4;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.sql-preview__btn .material-symbols-outlined {
+    font-size: 0.875rem;
+}
+
+.sql-preview__btn:hover {
+    background-color: #585b70;
+}
+
+.sql-preview__btn--download {
+    background-color: var(--primary);
+    color: #fff;
+}
+
+.sql-preview__btn--download:hover {
+    background-color: #1e40af;
+}
+
+.sql-preview__code {
+    background-color: #1e1e2e;
+    padding: 1.5rem 0;
+    max-height: 28rem;
+    overflow: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8125rem;
+    line-height: 1.7;
+}
+
+.sql-line {
+    display: flex;
+    padding: 0 1.25rem;
+}
+
+.sql-line:hover {
+    background-color: rgba(205, 214, 244, 0.04);
+}
+
+.sql-line__num {
+    width: 2.5rem;
+    flex-shrink: 0;
+    text-align: right;
+    color: #45475a;
+    user-select: none;
+    padding-right: 1rem;
+}
+
+.sql-line__text {
+    flex: 1;
+    min-width: 0;
+    white-space: pre;
+}
+
+.sql-comment { color: #6c7086; }
+.sql-keyword { color: #89b4fa; font-weight: 600; }
+.sql-string { color: #a6e3a1; }
+.sql-number { color: #fab387; }
+.sql-plain { color: #cdd6f4; }
+
+.sql-ready {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #22c55e;
+}
+
+.sql-ready__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: var(--rad-full);
+    background-color: #22c55e;
+}
+
+.side-menu__link--done {
+    color: #22c55e;
+}
+
+@media (max-width: 640px) {
+    .sql-controls {
+        gap: 0.75rem;
+    }
+
+    .sql-preview__header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .sql-line__num {
+        width: 1.5rem;
+        font-size: 0.6875rem;
+    }
+}
+
+@media (min-width: 640px) {
+    .sql-header {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .sql-controls {
+        flex-direction: row;
+        align-items: flex-end;
+    }
+}
+
 @media (min-width: 768px) {
     .main {
         padding: 3rem 0;

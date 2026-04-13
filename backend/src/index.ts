@@ -130,6 +130,110 @@ app.get('/api/columns/:filename', (req, res) => {
   }
 });
 
+function quoteId(name: string, engine: string): string {
+  if (engine === 'mysql') return `\`${name}\``;
+  if (engine === 'sqlserver') return `[${name}]`;
+  return `"${name}"`;
+}
+
+function sqlColType(colType: string, engine: string): string {
+  const map: Record<string, Record<string, string>> = {
+    postgresql: { number: 'NUMERIC', text: 'VARCHAR(255)', date: 'TIMESTAMP', boolean: 'BOOLEAN' },
+    mysql:      { number: 'DECIMAL(18,2)', text: 'VARCHAR(255)', date: 'DATETIME', boolean: 'TINYINT(1)' },
+    sqlite:     { number: 'REAL', text: 'TEXT', date: 'TEXT', boolean: 'INTEGER' },
+    sqlserver:  { number: 'DECIMAL(18,2)', text: 'NVARCHAR(255)', date: 'DATETIME2', boolean: 'BIT' },
+  };
+  return map[engine]?.[colType] ?? 'TEXT';
+}
+
+function formatSqlVal(value: unknown, colType: string, engine: string): string {
+  if (value == null || value === '') return 'NULL';
+  if (value instanceof Date) {
+    const iso = value.toISOString().replace('T', ' ').slice(0, 19);
+    return `'${iso}'`;
+  }
+  if (typeof value === 'boolean') {
+    if (engine === 'postgresql') return value ? 'TRUE' : 'FALSE';
+    return value ? '1' : '0';
+  }
+  if (typeof value === 'number') return String(value);
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+app.post('/api/generate-sql', (req, res) => {
+  const { storedName, headerRow, selectedColumns, tableName, dbEngine } = req.body as {
+    storedName: string; headerRow: number; selectedColumns: number[];
+    tableName: string; dbEngine: string;
+  };
+
+  if (!storedName || !tableName || !selectedColumns?.length) {
+    res.status(400).json({ success: false, message: 'Faltan parámetros requeridos' });
+    return;
+  }
+
+  if (/[/\\]/.test(storedName)) {
+    res.status(400).json({ success: false, message: 'Nombre de archivo inválido' });
+    return;
+  }
+
+  const filePath = path.join(uploadsDir, storedName);
+  if (!fs.existsSync(filePath)) {
+    res.status(404).json({ success: false, message: 'Archivo no encontrado' });
+    return;
+  }
+
+  try {
+    const workbook = XLSX.readFile(filePath, { cellDates: true });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, raw: true });
+
+    const headers = data[(headerRow || 1) - 1] as unknown[];
+    const dataRows = data.slice(headerRow || 1) as unknown[][];
+
+    const colNames = selectedColumns.map(i => String(headers[i] || `col_${i + 1}`));
+    const colTypes = selectedColumns.map(i => {
+      const vals = dataRows.map(r => r[i]).filter(v => v != null && v !== '');
+      return detectType(vals);
+    });
+
+    const q = (n: string) => quoteId(n, dbEngine);
+    const engine = dbEngine.charAt(0).toUpperCase() + dbEngine.slice(1);
+    const lines: string[] = [];
+
+    lines.push(`-- Generado por Extractor de Datos`);
+    lines.push(`-- Tabla: ${tableName} | Motor: ${engine}`);
+    lines.push(`-- Fecha: ${new Date().toISOString().slice(0, 19).replace('T', ' ')}`);
+    lines.push('');
+
+    lines.push(`CREATE TABLE ${q(tableName)} (`);
+    colNames.forEach((name, i) => {
+      const comma = i < colNames.length - 1 ? ',' : '';
+      lines.push(`    ${q(name)} ${sqlColType(colTypes[i], dbEngine)}${comma}`);
+    });
+    lines.push(');');
+    lines.push('');
+
+    const colList = colNames.map(n => q(n)).join(', ');
+    lines.push(`INSERT INTO ${q(tableName)} (${colList})`);
+    lines.push('VALUES');
+
+    dataRows.forEach((row, rowIdx) => {
+      const vals = selectedColumns.map((ci, i) => formatSqlVal(row[ci], colTypes[i], dbEngine));
+      const end = rowIdx < dataRows.length - 1 ? ',' : ';';
+      lines.push(`    (${vals.join(', ')})${end}`);
+    });
+
+    const sql = lines.join('\n');
+
+    res.json({
+      success: true,
+      data: { sql, totalStatements: dataRows.length },
+    });
+  } catch {
+    res.status(500).json({ success: false, message: 'Error al generar SQL' });
+  }
+});
+
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err instanceof multer.MulterError) {
     const messages: Record<string, string> = {

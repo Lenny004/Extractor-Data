@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, signal, computed, ElementRef, viewC
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { inject } from '@angular/core';
 
+import { DecimalPipe } from '@angular/common';
+
 import { FooterComponent } from './components/footer/footer';
 import { HeaderComponent } from './components/header/header';
 
@@ -17,7 +19,7 @@ interface ColumnInfo {
 
 @Component({
   selector: 'app-root',
-  imports: [HeaderComponent, FooterComponent],
+  imports: [HeaderComponent, FooterComponent, DecimalPipe],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -286,5 +288,130 @@ export class App {
     if (page >= 1 && page <= this.totalPages()) {
       this.currentPage.set(page);
     }
+  }
+
+  // Step 3 — SQL Generator
+
+  tableName = signal('');
+  dbEngine = signal('postgresql');
+  sqlOutput = signal('');
+  totalStatements = signal(0);
+  sqlGenerating = signal(false);
+  sqlGenerated = signal(false);
+  sqlCopied = signal(false);
+
+  readonly previewMaxLines = 60;
+
+  sqlLines = computed(() => {
+    const sql = this.sqlOutput();
+    if (!sql) return [];
+    const allLines = sql.split('\n');
+    const capped = allLines.length > this.previewMaxLines;
+    const lines = capped ? allLines.slice(0, this.previewMaxLines) : allLines;
+    const result = lines.map((text, i) => ({
+      num: i + 1,
+      segments: this.tokenizeLine(text),
+    }));
+    if (capped) {
+      const remaining = allLines.length - this.previewMaxLines;
+      result.push({
+        num: this.previewMaxLines + 1,
+        segments: [{ text: `-- ... ${remaining} líneas más`, cls: 'sql-comment' }],
+      });
+    }
+    return result;
+  });
+
+  private tokenizeLine(line: string): { text: string; cls: string }[] {
+    if (line.trimStart().startsWith('--')) {
+      return [{ text: line, cls: 'sql-comment' }];
+    }
+
+    const segments: { text: string; cls: string }[] = [];
+    const keywords = 'CREATE|TABLE|INSERT|INTO|VALUES|PRIMARY|KEY|NOT|NULL|DEFAULT|SERIAL|VARCHAR|INTEGER|INT|NUMERIC|DECIMAL|BOOLEAN|DATE|TIMESTAMP|DATETIME|DATETIME2|TEXT|REAL|NVARCHAR|BIT|TINYINT|INDEX|ON|AUTO_INCREMENT|IDENTITY';
+    const regex = new RegExp(`('(?:[^']|'')*'|\\b(?:${keywords})\\b|\\b\\d+(?:\\.\\d+)?\\b)`, 'gi');
+
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(line)) !== null) {
+      if (match.index > lastIndex) {
+        segments.push({ text: line.slice(lastIndex, match.index), cls: 'sql-plain' });
+      }
+      const token = match[0];
+      if (token.startsWith("'")) segments.push({ text: token, cls: 'sql-string' });
+      else if (/^\d/.test(token)) segments.push({ text: token, cls: 'sql-number' });
+      else segments.push({ text: token, cls: 'sql-keyword' });
+      lastIndex = match.index + token.length;
+    }
+    if (lastIndex < line.length) {
+      segments.push({ text: line.slice(lastIndex), cls: 'sql-plain' });
+    }
+    return segments;
+  }
+
+  private deriveTableName(filename: string): string {
+    return filename
+      .replace(/\.[^.]+$/, '')
+      .replace(/[^a-zA-Z0-9_]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '')
+      .toLowerCase();
+  }
+
+  goToStep3() {
+    if (!this.tableName()) {
+      this.tableName.set(this.deriveTableName(this.fileName()));
+    }
+    this.currentStep.set(3);
+  }
+
+  backToColumns() {
+    this.currentStep.set(2);
+  }
+
+  generateSql() {
+    this.sqlGenerating.set(true);
+    this.sqlGenerated.set(false);
+
+    const body = {
+      storedName: this.storedFilename(),
+      headerRow: this.headerRow(),
+      selectedColumns: this.columns().filter(c => c.selected).map(c => c.index),
+      tableName: this.tableName(),
+      dbEngine: this.dbEngine(),
+    };
+
+    this.http.post<{ success: boolean; data: { sql: string; totalStatements: number } }>(
+      'http://localhost:3000/api/generate-sql', body
+    ).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.sqlOutput.set(res.data.sql);
+          this.totalStatements.set(res.data.totalStatements);
+          this.sqlGenerated.set(true);
+        }
+        this.sqlGenerating.set(false);
+      },
+      error: () => {
+        this.sqlGenerating.set(false);
+      },
+    });
+  }
+
+  copySql() {
+    navigator.clipboard.writeText(this.sqlOutput()).then(() => {
+      this.sqlCopied.set(true);
+      setTimeout(() => this.sqlCopied.set(false), 2000);
+    });
+  }
+
+  downloadSql() {
+    const blob = new Blob([this.sqlOutput()], { type: 'text/sql' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${this.tableName() || 'output'}.sql`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }
