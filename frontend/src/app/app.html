@@ -63,12 +63,13 @@
             </div>
             <div class="upload-zone__content">
               <p class="upload-zone__heading">Suelta los archivos aquí o explora</p>
-              <p class="upload-zone__hint">Formatos soportados: .xlsx, .xls, .csv</p>
+              <p class="upload-zone__hint">Formatos soportados: .xlsx, .xls, .csv, .dat</p>
             </div>
             <button class="upload-zone__btn" type="button" (click)="$event.stopPropagation(); abrirSelectorArchivo()">
               Seleccionar Archivo
             </button>
-            <input #inputArchivo class="upload-zone__input" type="file" accept=".xlsx,.xls,.csv"
+            <input #inputArchivo class="upload-zone__input" type="file" accept=".xlsx,.xls,.csv,.dat"
+              aria-label="Seleccionar un archivo" title="Seleccionar un archivo"
               (change)="cuandoEligeArchivo($event)" (click)="$event.stopPropagation()" />
           </div>
           } @else {
@@ -105,6 +106,21 @@
               <p class="field__hint">El valor por defecto es 1. Si tus datos comienzan más abajo,
                 especifica la fila.</p>
             </div>
+
+            <!-- NUEVO: Selector de Hoja -->
+            @if (hojasDisponibles().length > 0) {
+            <div class="field">
+              <label class="field__label" for="sheet-select">Hoja a extraer</label>
+              <div class="field__input-wrapper">
+                <select class="field__input" id="sheet-select" [value]="hojaSeleccionada()" (change)="cuandoCambiaHoja($event)">
+                  @for (hoja of hojasDisponibles(); track hoja) {
+                    <option [value]="hoja">{{ hoja }}</option>
+                  }
+                </select>
+                <span class="field__icon material-symbols-outlined">layers</span>
+              </div>
+            </div>
+            }
 
             @if (debeMostrarBarraProgreso()) {
             <div class="progress-block" [class.progress-block--error]="estadoSubida() === 'error'"
@@ -314,6 +330,7 @@
             </button>
           </div>
         </div>
+        
       </div>
       }
 
@@ -389,6 +406,25 @@
               Nuevo archivo
             </button>
           </div>
+          
+          <div class="json-preview">
+            <div class="ws-header">
+              <h3 class="json-preview__title card-header__title">Vista previa JSON</h3>
+              <p class="card-header__description">Este es el formato final de tus datos listos para exportar.</p>
+            </div>
+            
+            <div class="json-preview__code-box">
+              <pre><code>{{ jsonVista() }}</code></pre>
+            </div>
+
+            <div class="json-preview__actions">
+              <button class="btn-copy" (click)="copiarAlPortapapeles()">
+                <span class="material-symbols-outlined btn-copy__icon">content_copy</span>
+                <span>Copiar JSON</span>
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
       }
