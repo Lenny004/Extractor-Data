@@ -19,3 +19,13 @@ export interface ColumnaExcel {
   ejemploCelda: string;
   elegida: boolean;
 }
+
+/** Resultado de validar el ancho de columnas entre hoja origen y hoja destino (respuesta de /api/extract). */
+export interface ValidacionTransferenciaColumnas {
+  habilitada: boolean;
+  hojaDestino: string;
+  columnasOrigen: number;
+  columnasDestino: number;
+  encabezadosTransferidos: string[];
+  encabezadosOmitidos: string[];
+}

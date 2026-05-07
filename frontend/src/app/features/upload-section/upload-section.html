@@ -116,6 +116,31 @@
         </div>
       }
 
+      @if (session.hojasDisponibles().length > 1) {
+        <div class="field">
+          <label class="field__label" for="sheet-target-validate">Hoja destino (validación de columnas)</label>
+          <div class="field__input-wrapper">
+            <select
+              class="field__input"
+              id="sheet-target-validate"
+              [value]="session.hojaDestinoValidacion()"
+              (change)="session.cuandoCambiaHojaDestinoValidacion($event)"
+            >
+              <option value="">Ninguna — extraer sin comparar otra hoja</option>
+              @for (hoja of session.hojasDisponibles(); track hoja) {
+                <option [value]="hoja" [disabled]="hoja === session.hojaSeleccionada()">{{ hoja }}</option>
+              }
+            </select>
+            <span class="field__icon material-symbols-outlined">compare_arrows</span>
+          </div>
+          <p class="field__hint">
+            Opcional: antes de transferir datos, se comprueba que la hoja origen tenga al menos tantas columnas
+            como esta hoja. Si hay más columnas seleccionadas que las que admite la destino, solo se transfieren
+            las primeras (en el orden de tu selección) y se indica el resto como omitidas.
+          </p>
+        </div>
+      }
+
       @if (session.debeMostrarBarraProgreso()) {
         <div
           class="progress-block"

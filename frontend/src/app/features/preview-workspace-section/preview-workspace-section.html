@@ -20,9 +20,18 @@
         <h1 class="card-header__title">Datos extraídos</h1>
         <p class="card-header__description">
           Hoja <strong>{{ session.nombreHojaEnResultado() }}</strong> ·
-          {{ session.filasTabla().length }} filas mostradas
+          @if (session.filasTabla().length > 0) {
+            Mostrando filas
+            {{ (session.paginaVistaPrevia() - 1) * session.tamanoPaginaVistaPrevia() + 1 }}–{{
+              (session.paginaVistaPrevia() - 1) * session.tamanoPaginaVistaPrevia() +
+                session.filasVistaPreviaPaginadas().length
+            }}
+            de {{ session.filasTabla().length }} en vista previa
+          } @else {
+            Sin filas en vista previa
+          }
           @if (session.totalFilasQueHayEnExcel() > session.filasTabla().length) {
-            (de {{ session.totalFilasQueHayEnExcel() }} en el archivo)
+            ({{ session.totalFilasQueHayEnExcel() }} filas en el archivo)
           }
           @if (session.resultadoTruncado()) {
             <span class="ws-header__warn"> · Vista limitada a las primeras filas por tamaño.</span>
@@ -30,6 +39,104 @@
         </p>
       </div>
     </div>
+
+    @if (session.ultimaValidacionTransferencia(); as val) {
+      <div class="alert-banner alert-banner--info" role="status">
+        <span class="material-symbols-outlined">fact_check</span>
+        <div class="preview-validation-banner">
+          <p>
+            <strong>Validación entre hojas:</strong> hoja origen
+            <strong>{{ val.columnasOrigen }} columnas</strong>, hoja destino
+            <strong>"{{ val.hojaDestino }}"</strong> con
+            <strong>{{ val.columnasDestino }} columnas</strong>.
+          </p>
+          <p>
+            <strong>Columnas transferidas ({{ val.encabezadosTransferidos.length }}):</strong>
+            {{ val.encabezadosTransferidos.join(', ') }}
+          </p>
+          @if (val.encabezadosOmitidos.length > 0) {
+            <p>
+              <strong>Columnas omitidas ({{ val.encabezadosOmitidos.length }}):</strong>
+              {{ val.encabezadosOmitidos.join(', ') }}
+            </p>
+          }
+        </div>
+      </div>
+    }
+
+    @if (session.filasTabla().length > 0) {
+      <div class="preview-pagination-toolbar">
+        <div class="preview-page-size">
+          <label class="preview-page-size__label" for="preview-page-size">Filas por página</label>
+          <select
+            class="field__input preview-page-size__select"
+            id="preview-page-size"
+            [value]="session.tamanoPaginaVistaPrevia()"
+            (change)="session.alCambiarTamanoPaginaVistaPrevia(($any($event.target).value))"
+          >
+            <option [value]="10">10</option>
+            <option [value]="15">15</option>
+            <option [value]="20">20</option>
+          </select>
+        </div>
+
+        <div class="preview-goto-page">
+          <label class="preview-goto-page__label" for="preview-goto-page">Ir a página</label>
+          <input
+            class="field__input preview-goto-page__input"
+            id="preview-goto-page"
+            type="number"
+            [attr.min]="1"
+            [attr.max]="session.totalPaginasVistaPrevia()"
+            [value]="paginaParaSaltar()"
+            (focus)="sincronizarInputPaginaConSesion()"
+            (input)="paginaParaSaltar.set(($any($event.target).value))"
+            (keyup.enter)="irAPaginaDesdeCampo()"
+          />
+          <button class="btn--back preview-goto-page__btn" type="button" (click)="irAPaginaDesdeCampo()">
+            Ir
+          </button>
+        </div>
+      </div>
+
+      <div class="col-pagination-bar preview-col-pagination-bar">
+        <span class="col-pagination-bar__count">
+          Página {{ session.paginaVistaPrevia() }} de {{ session.totalPaginasVistaPrevia() }}
+        </span>
+        <div class="col-pagination">
+          <button
+            class="col-pagination__btn"
+            type="button"
+            (click)="session.irAPaginaVistaPrevia(session.paginaVistaPrevia() - 1); sincronizarInputPaginaConSesion()"
+            [disabled]="session.paginaVistaPrevia() === 1"
+          >
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          @for (page of session.numerosPaginaVistaPreviaParaBotones(); track $index) {
+            @if (page === '...') {
+              <span class="col-pagination__ellipsis">…</span>
+            } @else {
+              <button
+                class="col-pagination__btn col-pagination__num"
+                type="button"
+                [class.col-pagination__num--active]="page === session.paginaVistaPrevia()"
+                (click)="session.irAPaginaVistaPrevia(+page); sincronizarInputPaginaConSesion()"
+              >
+                {{ page }}
+              </button>
+            }
+          }
+          <button
+            class="col-pagination__btn"
+            type="button"
+            (click)="session.irAPaginaVistaPrevia(session.paginaVistaPrevia() + 1); sincronizarInputPaginaConSesion()"
+            [disabled]="session.paginaVistaPrevia() >= session.totalPaginasVistaPrevia()"
+          >
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    }
 
     <div class="ws-table-wrap">
       <table class="ws-table">
@@ -42,9 +149,11 @@
           </tr>
         </thead>
         <tbody>
-          @for (row of session.filasTabla(); track $index; let ri = $index) {
+          @for (row of session.filasVistaPreviaPaginadas(); track $index; let ri = $index) {
             <tr>
-              <td class="ws-table__td ws-table__td--num">{{ ri + 1 }}</td>
+              <td class="ws-table__td ws-table__td--num">
+                {{ (session.paginaVistaPrevia() - 1) * session.tamanoPaginaVistaPrevia() + ri + 1 }}
+              </td>
               @for (cell of row; track $index) {
                 <td class="ws-table__td">{{ cell }}</td>
               }

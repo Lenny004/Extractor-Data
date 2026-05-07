@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Observable, catchError, map, of, take } from 'rxjs';
 
-import type { ColumnaExcel, EstadoSubida } from '../../models/extraction.model';
+import type { ColumnaExcel, EstadoSubida, ValidacionTransferenciaColumnas } from '../../models/extraction.model';
 
 /**
  * URL del backend. En producción convendría leerla de `environment.ts`.
@@ -39,6 +39,8 @@ export class ExtractionSessionService {
   readonly filaEncabezados = signal(1);
   readonly hojasDisponibles = signal<string[]>([]);
   readonly hojaSeleccionada = signal('');
+  /** Hoja con la que se compara el ancho de columnas antes de extraer (opcional). */
+  readonly hojaDestinoValidacion = signal('');
 
   readonly textoBarraProgreso = computed(() => {
     const e = this.estadoSubida();
@@ -124,6 +126,42 @@ export class ExtractionSessionService {
   readonly filasTabla = signal<string[][]>([]);
   readonly resultadoTruncado = signal(false);
   readonly totalFilasQueHayEnExcel = signal(0);
+  readonly ultimaValidacionTransferencia = signal<ValidacionTransferenciaColumnas | null>(null);
+
+  readonly tamanoPaginaVistaPrevia = signal<10 | 15 | 20>(10);
+  readonly paginaVistaPrevia = signal(1);
+
+  readonly totalPaginasVistaPrevia = computed(() => {
+    const totalFilas = this.filasTabla().length;
+    const size = this.tamanoPaginaVistaPrevia();
+    return Math.max(1, Math.ceil(totalFilas / size) || 1);
+  });
+
+  readonly filasVistaPreviaPaginadas = computed(() => {
+    const todas = this.filasTabla();
+    const size = this.tamanoPaginaVistaPrevia();
+    const pag = Math.min(this.paginaVistaPrevia(), this.totalPaginasVistaPrevia());
+    const inicio = (pag - 1) * size;
+    return todas.slice(inicio, inicio + size);
+  });
+
+  readonly numerosPaginaVistaPreviaParaBotones = computed(() => {
+    const total = this.totalPaginasVistaPrevia();
+    const actual = Math.min(this.paginaVistaPrevia(), total);
+
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
+
+    const paginas: (number | string)[] = [1];
+    if (actual > 3) paginas.push('...');
+
+    const desde = Math.max(2, actual - 1);
+    const hasta = Math.min(total - 1, actual + 1);
+    for (let i = desde; i <= hasta; i++) paginas.push(i);
+
+    if (actual < total - 2) paginas.push('...');
+    paginas.push(total);
+    return paginas;
+  });
 
   /** JSON derivado para copiar al portapapeles (misma semántica que la implementación monolítica). */
   readonly jsonVista = computed(() => {
@@ -195,6 +233,14 @@ export class ExtractionSessionService {
   cuandoCambiaHoja(evento: Event): void {
     const select = evento.target as HTMLSelectElement;
     this.hojaSeleccionada.set(select.value);
+    if (this.hojaDestinoValidacion() === select.value) {
+      this.hojaDestinoValidacion.set('');
+    }
+  }
+
+  cuandoCambiaHojaDestinoValidacion(evento: Event): void {
+    const select = evento.target as HTMLSelectElement;
+    this.hojaDestinoValidacion.set(select.value);
   }
 
   quitarArchivoYEmpezarDeNuevo(): void {
@@ -206,6 +252,7 @@ export class ExtractionSessionService {
     this.idArchivoEnServidor.set('');
     this.hojasDisponibles.set([]);
     this.hojaSeleccionada.set('');
+    this.hojaDestinoValidacion.set('');
     this.limpiarDatosTabla();
   }
 
@@ -341,6 +388,24 @@ export class ExtractionSessionService {
 
     this.esperandoRespuestaTabla.set(true);
     this.mensajeErrorTabla.set('');
+    this.ultimaValidacionTransferencia.set(null);
+
+    const destino = this.hojaDestinoValidacion().trim();
+    const cuerpo: {
+      filename: string;
+      headerRow: number;
+      columnIndices: number[];
+      sheetName: string;
+      targetSheetName?: string;
+    } = {
+      filename: this.idArchivoEnServidor(),
+      headerRow: this.filaEncabezados(),
+      columnIndices: columnasQueQuiero,
+      sheetName: this.hojaSeleccionada(),
+    };
+    if (destino) {
+      cuerpo.targetSheetName = destino;
+    }
 
     return this.http
       .post<{
@@ -352,13 +417,16 @@ export class ExtractionSessionService {
           rows: string[][];
           totalRowsInFile: number;
           truncated: boolean;
+          columnTransferValidation?: {
+            enabled: boolean;
+            targetSheetName: string;
+            sourceColumnCount: number;
+            destinationColumnCount: number;
+            transferredHeaders: string[];
+            omittedHeaders: string[];
+          };
         };
-      }>(`${URL_SERVIDOR}/api/extract`, {
-        filename: this.idArchivoEnServidor(),
-        headerRow: this.filaEncabezados(),
-        columnIndices: columnasQueQuiero,
-        sheetName: this.hojaSeleccionada(),
-      })
+      }>(`${URL_SERVIDOR}/api/extract`, cuerpo)
       .pipe(
         take(1),
         map((respuesta) => {
@@ -369,6 +437,20 @@ export class ExtractionSessionService {
             this.filasTabla.set(respuesta.data.rows);
             this.resultadoTruncado.set(respuesta.data.truncated);
             this.totalFilasQueHayEnExcel.set(respuesta.data.totalRowsInFile);
+            const v = respuesta.data.columnTransferValidation;
+            if (v?.enabled) {
+              this.ultimaValidacionTransferencia.set({
+                habilitada: true,
+                hojaDestino: v.targetSheetName,
+                columnasOrigen: v.sourceColumnCount,
+                columnasDestino: v.destinationColumnCount,
+                encabezadosTransferidos: v.transferredHeaders,
+                encabezadosOmitidos: v.omittedHeaders,
+              });
+            } else {
+              this.ultimaValidacionTransferencia.set(null);
+            }
+            this.paginaVistaPrevia.set(1);
             return true;
           }
           this.mensajeErrorTabla.set(respuesta.message || 'No se pudo extraer los datos');
@@ -406,6 +488,8 @@ export class ExtractionSessionService {
     this.filasTabla.set([]);
     this.resultadoTruncado.set(false);
     this.totalFilasQueHayEnExcel.set(0);
+    this.ultimaValidacionTransferencia.set(null);
+    this.paginaVistaPrevia.set(1);
   }
 
   private pedirListaColumnasAlServidor(): void {
@@ -471,6 +555,21 @@ export class ExtractionSessionService {
   irAPaginaColumnas(numeroPagina: number): void {
     if (numeroPagina >= 1 && numeroPagina <= this.totalPaginasListaColumnas()) {
       this.paginaListaColumnas.set(numeroPagina);
+    }
+  }
+
+  alCambiarTamanoPaginaVistaPrevia(valor: string): void {
+    const n = parseInt(valor, 10);
+    if (n === 10 || n === 15 || n === 20) {
+      this.tamanoPaginaVistaPrevia.set(n);
+      this.paginaVistaPrevia.set(1);
+    }
+  }
+
+  irAPaginaVistaPrevia(numeroPagina: number): void {
+    const total = this.totalPaginasVistaPrevia();
+    if (numeroPagina >= 1 && numeroPagina <= total) {
+      this.paginaVistaPrevia.set(numeroPagina);
     }
   }
 

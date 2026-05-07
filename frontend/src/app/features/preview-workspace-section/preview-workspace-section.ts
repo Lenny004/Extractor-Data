@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 
 import { DashboardEventBusService } from '../../core/services/dashboard-event-bus.service';
 import { ExtractionSessionService } from '../../core/services/extraction-session.service';
@@ -19,6 +19,9 @@ export class PreviewWorkspaceSectionComponent {
   readonly session = inject(ExtractionSessionService);
   private readonly eventBus = inject(DashboardEventBusService);
 
+  /** Valor del campo “ir a página” (sincronizado al navegar por botones). */
+  readonly paginaParaSaltar = signal('');
+
   volverASubir(): void {
     this.eventBus.emit({ type: 'REQUEST_NAVIGATION', payload: { target: 'subir' } });
   }
@@ -34,5 +37,16 @@ export class PreviewWorkspaceSectionComponent {
 
   copiarJson(): void {
     void this.session.copiarJsonAlPortapapeles();
+  }
+
+  sincronizarInputPaginaConSesion(): void {
+    this.paginaParaSaltar.set(String(this.session.paginaVistaPrevia()));
+  }
+
+  irAPaginaDesdeCampo(): void {
+    const n = parseInt(this.paginaParaSaltar().trim(), 10);
+    if (Number.isNaN(n)) return;
+    this.session.irAPaginaVistaPrevia(n);
+    this.sincronizarInputPaginaConSesion();
   }
 }
