@@ -1,0 +1,190 @@
+<div class="card">
+  <div class="card__step-bar">
+    <span class="card__step-badge">2</span>
+    <span class="card__step-label">Paso 2 de 3: Seleccionar Columnas</span>
+  </div>
+
+  <div class="card__body">
+    <nav class="breadcrumb" aria-label="Ruta de navegación">
+      <button class="breadcrumb__link" type="button" (click)="volverASubir()">Subir Archivo</button>
+      <span class="material-symbols-outlined breadcrumb__sep">chevron_right</span>
+      <span class="breadcrumb__current">Seleccionar Columnas</span>
+    </nav>
+
+    @if (session.mensajeErrorTabla()) {
+      <div class="alert-banner alert-banner--error" role="alert">
+        <span class="material-symbols-outlined">error</span>
+        <span>{{ session.mensajeErrorTabla() }}</span>
+      </div>
+    }
+
+    <div class="col-header">
+      <div class="col-header__text">
+        <h1 class="card-header__title">Seleccionar Columnas</h1>
+        <p class="card-header__description">
+          Revisa las columnas detectadas de
+          <strong>"{{ session.nombreArchivo() }}"</strong>
+          y selecciona las que deseas exportar.
+        </p>
+      </div>
+    </div>
+    <div class="col-header">
+      <div class="status-badge">
+        <span class="status-badge__label">ESTADO</span>
+        <span class="status-badge__value"
+          >{{ session.cuantasColumnasElegidas() }} de
+          {{ session.totalColumnasDetectadas() }} columnas seleccionadas</span
+        >
+      </div>
+    </div>
+
+    @if (session.cargandoListaColumnas()) {
+      <div class="col-loading">
+        <span class="material-symbols-outlined col-loading__icon">hourglass_top</span>
+        <p>Leyendo columnas del archivo...</p>
+      </div>
+    } @else {
+      <div class="col-toolbar">
+        <div class="col-toolbar__search">
+          <span class="material-symbols-outlined">search</span>
+          <input
+            type="text"
+            placeholder="Buscar por nombre de columna o datos..."
+            (input)="alEscribirBusqueda($event)"
+            [value]="session.textoBuscarColumnas()"
+          />
+        </div>
+        <div class="col-toolbar__actions">
+          <button class="col-toolbar__btn" type="button" (click)="session.marcarTodasLasColumnas()">
+            <span class="material-symbols-outlined">check_box</span>
+            Seleccionar Todo
+          </button>
+          <button
+            class="col-toolbar__btn"
+            type="button"
+            (click)="session.quitarMarcaEnTodasLasColumnas()"
+          >
+            <span class="material-symbols-outlined">check_box_outline_blank</span>
+            Deseleccionar Todo
+          </button>
+          <button class="col-toolbar__btn" type="button" (click)="session.invertirMarcadas()">
+            <span class="material-symbols-outlined">swap_vert</span>
+            Invertir
+          </button>
+        </div>
+      </div>
+
+      <div class="col-table">
+        <div class="col-table__head">
+          <span class="col-table__cell col-table__cell--check"></span>
+          <span class="col-table__cell col-table__cell--type">TIPO</span>
+          <span class="col-table__cell col-table__cell--name">NOMBRE DE COLUMNA</span>
+          <span class="col-table__cell col-table__cell--sample">DATOS DE MUESTRA</span>
+          <span class="col-table__cell col-table__cell--action">ACCIÓN</span>
+        </div>
+
+        @for (col of session.columnasPaginaActual(); track col.posicion) {
+          <div
+            class="col-table__row"
+            [class.col-table__row--selected]="col.elegida"
+            (click)="session.clicEnFilaColumna(col.posicion)"
+          >
+            <span class="col-table__cell col-table__cell--check">
+              @if (col.elegida) {
+                <span class="material-symbols-outlined col-check--on">check_box</span>
+              } @else {
+                <span class="material-symbols-outlined col-check--off"
+                  >check_box_outline_blank</span
+                >
+              }
+            </span>
+            <span class="col-table__cell col-table__cell--type">
+              <span class="type-badge type-badge--{{ col.tipo }}">
+                <span class="material-symbols-outlined">{{
+                  session.iconoTipoColumna(col.tipo)
+                }}</span>
+              </span>
+            </span>
+            <span class="col-table__cell col-table__cell--name">{{ col.titulo }}</span>
+            <span class="col-table__cell col-table__cell--sample">"{{ col.ejemploCelda }}"</span>
+            <span class="col-table__cell col-table__cell--action">
+              <button
+                class="col-table__edit-btn"
+                type="button"
+                (click)="$event.stopPropagation()"
+                aria-label="Editar columna"
+              >
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+            </span>
+          </div>
+        } @empty {
+          <div class="col-table__empty">
+            <span class="material-symbols-outlined">search_off</span>
+            <p>No se encontraron columnas que coincidan.</p>
+          </div>
+        }
+      </div>
+
+      <div class="col-pagination-bar">
+        <span class="col-pagination-bar__count">
+          MOSTRANDO {{ session.columnasPaginaActual().length }} DE
+          {{ session.columnasQueCoincidenConBusqueda().length }}
+          COLUMNAS
+        </span>
+        <div class="col-pagination">
+          <button
+            class="col-pagination__btn"
+            type="button"
+            (click)="session.irAPaginaColumnas(session.paginaListaColumnas() - 1)"
+            [disabled]="session.paginaListaColumnas() === 1"
+          >
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          @for (page of session.numerosPaginaParaBotones(); track $index) {
+            @if (page === '...') {
+              <span class="col-pagination__ellipsis">…</span>
+            } @else {
+              <button
+                class="col-pagination__btn col-pagination__num"
+                type="button"
+                [class.col-pagination__num--active]="page === session.paginaListaColumnas()"
+                (click)="session.irAPaginaColumnas(+page)"
+              >
+                {{ page }}
+              </button>
+            }
+          }
+          <button
+            class="col-pagination__btn"
+            type="button"
+            (click)="session.irAPaginaColumnas(session.paginaListaColumnas() + 1)"
+            [disabled]="session.paginaListaColumnas() >= session.totalPaginasListaColumnas()"
+          >
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="card-footer card-footer--between">
+      <button class="btn--back" type="button" (click)="volverASubir()">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Volver a Subir
+      </button>
+      <button
+        class="btn--primary"
+        type="button"
+        [disabled]="session.cuantasColumnasElegidas() === 0 || session.esperandoRespuestaTabla()"
+        (click)="extraerYContinuarAVistaPrevia()"
+      >
+        @if (session.esperandoRespuestaTabla()) {
+          Extrayendo datos…
+        } @else {
+          Siguiente: ver datos extraídos
+        }
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+    </div>
+  </div>
+</div>

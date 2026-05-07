@@ -1,0 +1,94 @@
+<div class="card">
+  <div class="card__step-bar">
+    <span class="card__step-badge">3</span>
+    <span class="card__step-label">Paso 3 de 3: Espacio de trabajo</span>
+  </div>
+
+  <div class="card__body">
+    <nav class="breadcrumb" aria-label="Ruta de navegación">
+      <button class="breadcrumb__link" type="button" (click)="volverASubir()">Subir Archivo</button>
+      <span class="material-symbols-outlined breadcrumb__sep">chevron_right</span>
+      <button class="breadcrumb__link" type="button" (click)="volverAColumnas()">
+        Seleccionar Columnas
+      </button>
+      <span class="material-symbols-outlined breadcrumb__sep">chevron_right</span>
+      <span class="breadcrumb__current">Datos extraídos</span>
+    </nav>
+
+    <div class="ws-header">
+      <div>
+        <h1 class="card-header__title">Datos extraídos</h1>
+        <p class="card-header__description">
+          Hoja <strong>{{ session.nombreHojaEnResultado() }}</strong> ·
+          {{ session.filasTabla().length }} filas mostradas
+          @if (session.totalFilasQueHayEnExcel() > session.filasTabla().length) {
+            (de {{ session.totalFilasQueHayEnExcel() }} en el archivo)
+          }
+          @if (session.resultadoTruncado()) {
+            <span class="ws-header__warn"> · Vista limitada a las primeras filas por tamaño.</span>
+          }
+        </p>
+      </div>
+    </div>
+
+    <div class="ws-table-wrap">
+      <table class="ws-table">
+        <thead>
+          <tr>
+            <th class="ws-table__th ws-table__th--num">#</th>
+            @for (h of session.titulosTabla(); track $index) {
+              <th class="ws-table__th">{{ h }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of session.filasTabla(); track $index; let ri = $index) {
+            <tr>
+              <td class="ws-table__td ws-table__td--num">{{ ri + 1 }}</td>
+              @for (cell of row; track $index) {
+                <td class="ws-table__td">{{ cell }}</td>
+              }
+            </tr>
+          } @empty {
+            <tr>
+              <td class="ws-table__empty" [attr.colspan]="session.titulosTabla().length + 1">
+                No hay filas de datos para las columnas seleccionadas.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-footer card-footer--between">
+      <button class="btn--back" type="button" (click)="volverAColumnas()">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Volver a columnas
+      </button>
+      <button class="btn--back" type="button" (click)="volverASubir()">
+        <span class="material-symbols-outlined">upload_file</span>
+        Nuevo archivo
+      </button>
+    </div>
+
+    <div class="json-preview">
+      <div class="ws-header">
+        <h3 class="json-preview__title card-header__title">Vista previa JSON</h3>
+        <p class="card-header__description">
+          Este es el formato final de tus datos listos para exportar.
+        </p>
+      </div>
+
+      <div class="json-preview__code-box">
+        <pre><code>{{ session.jsonVista() }}</code></pre>
+      </div>
+
+      <div class="json-preview__actions">
+        <button class="btn-copy" type="button" (click)="copiarJson()">
+          <span class="material-symbols-outlined btn-copy__icon">content_copy</span>
+          <span>Copiar JSON</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

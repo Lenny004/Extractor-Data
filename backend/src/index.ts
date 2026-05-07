@@ -1,3 +1,5 @@
+import path from 'path';
+import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -5,11 +7,14 @@ import apiRoutes from './routes/api.routes';
 import { cleanupExpiredUploads } from './utils/file.utils';
 import { uploadsDir } from './middleware/upload.middleware';
 
+dotenv.config({ path: path.join(__dirname, '../../.env') });
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const UPLOAD_CLEANUP_INTERVAL_MS = Number(process.env.UPLOAD_CLEANUP_INTERVAL_MS) || 5 * 60 * 1000;
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:4200';
 
-app.use(cors({ origin: 'http://localhost:4200' }));
+app.use(cors({ origin: CORS_ORIGIN }));
 app.use(express.json());
 
 // Enlazamos todas las rutas modulares
