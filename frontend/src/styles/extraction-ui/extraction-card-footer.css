@@ -1,0 +1,37 @@
+/* Pie de tarjeta con acciones e información */
+
+.card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.card-footer__info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--tx-muted);
+  font-size: 0.875rem;
+}
+
+.card-footer__actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.card-footer--between {
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.card-footer__tip {
+  font-size: 0.8125rem;
+  color: var(--tx-muted);
+  font-style: italic;
+}

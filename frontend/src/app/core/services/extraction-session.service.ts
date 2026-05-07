@@ -404,7 +404,7 @@ export class ExtractionSessionService {
       sheetName: this.hojaSeleccionada(),
     };
     if (destino) {
-      cuerpo.targetSheetName = destino;
+      cuerpo['targetSheetName'] = destino;
     }
 
     return this.http
@@ -478,6 +478,92 @@ export class ExtractionSessionService {
   intentarAbrirVistaPreviaDesdeMenu(): Observable<boolean> {
     if (!this.idArchivoEnServidor() || this.listaColumnas().length === 0) return of(false);
     return this.pedirTablaAlServidor();
+  }
+
+  /**
+   * Genera un script SQL (CREATE opcional + INSERTs) con la misma selección de columnas que la extracción.
+   */
+  solicitarGeneracionSql(opciones: {
+    tableName: string;
+    dialect: 'mysql' | 'postgresql';
+    includeCreateTable: boolean;
+    emptyStringAsNull: boolean;
+  }): Observable<
+    | {
+        ok: true;
+        data: {
+          sql: string;
+          truncated: boolean;
+          totalRowsInFile: number;
+          rowCountInScript: number;
+          sheetName: string;
+        };
+      }
+    | { ok: false; message: string }
+  > {
+    const columnasQueQuiero = this.posicionesColumnasElegidas();
+    if (columnasQueQuiero.length === 0) {
+      return of({ ok: false, message: 'Selecciona al menos una columna antes de generar SQL.' });
+    }
+
+    const destino = this.hojaDestinoValidacion().trim();
+    const cuerpo: Record<string, unknown> = {
+      filename: this.idArchivoEnServidor(),
+      headerRow: this.filaEncabezados(),
+      columnIndices: columnasQueQuiero,
+      sheetName: this.hojaSeleccionada(),
+      tableName: opciones.tableName.trim(),
+      dialect: opciones.dialect,
+      includeCreateTable: opciones.includeCreateTable,
+      emptyStringAsNull: opciones.emptyStringAsNull,
+    };
+    if (destino) {
+      cuerpo['targetSheetName'] = destino;
+    }
+
+    return this.http
+      .post<{
+        success: boolean;
+        message?: string;
+        data?: {
+          sql: string;
+          truncated: boolean;
+          totalRowsInFile: number;
+          rowCountInScript: number;
+          sheetName: string;
+        };
+      }>(`${URL_SERVIDOR}/api/generate-sql`, cuerpo)
+      .pipe(
+        take(1),
+        map((respuesta) => {
+          if (respuesta.success && respuesta.data?.sql != null) {
+            const d = respuesta.data;
+            return {
+              ok: true as const,
+              data: {
+                sql: d.sql,
+                truncated: d.truncated,
+                totalRowsInFile: d.totalRowsInFile,
+                rowCountInScript: d.rowCountInScript,
+                sheetName: d.sheetName,
+              },
+            };
+          }
+          return { ok: false as const, message: respuesta.message || 'No se pudo generar el SQL' };
+        }),
+        catchError((err: { error?: { message?: string }; status?: number }) => {
+          const delServidor = err?.error?.message;
+          const sinRed = err?.status === 0;
+          return of({
+            ok: false as const,
+            message:
+              delServidor ||
+              (sinRed
+                ? 'No hubo respuesta del servidor. ¿Está encendido el backend en el puerto 3000?'
+                : 'Fallo al generar SQL. Revisa el archivo y los parámetros.'),
+          });
+        }),
+      );
   }
 
   private limpiarDatosTabla(): void {

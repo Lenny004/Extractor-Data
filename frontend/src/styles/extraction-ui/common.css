@@ -1,0 +1,149 @@
+/**
+ * Estilos compartidos entre pasos del flujo de extracción:
+ * cabeceras de tarjeta, botones y avisos tipo banner.
+ */
+
+.card-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.card-header__title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--black);
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.card-header__description {
+  font-size: 1rem;
+  color: var(--tx-body);
+  max-width: 37.5rem;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.btn--primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 10rem;
+  height: 3rem;
+  padding: 0 2rem;
+  background-color: var(--primary);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--rad-md);
+  cursor: pointer;
+  box-shadow: var(--sh-btn);
+  transition:
+    box-shadow 0.4s ease,
+    transform 0.2s ease;
+  gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.btn--primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(to right, #00288e, #1e40af);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.4s ease;
+}
+
+.btn--primary:hover {
+  box-shadow: 0 8px 25px rgba(37, 140, 244, 0.4);
+}
+
+.btn--primary:hover::before {
+  opacity: 1;
+}
+
+.btn--primary:active {
+  transform: scale(0.98);
+}
+
+.btn--primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn--primary:disabled::before {
+  display: none;
+}
+
+.btn--compact {
+  flex: none;
+  min-width: auto;
+  height: 2.5rem;
+  padding: 0 1.25rem;
+  font-size: 0.8125rem;
+}
+
+.btn--back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--font);
+  color: var(--tx-body);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.btn--back .material-symbols-outlined {
+  font-size: 1.125rem;
+}
+
+.btn--back:hover {
+  background-color: var(--bg-subtle);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--rad-md);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.alert-banner .material-symbols-outlined {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.alert-banner--error {
+  background-color: rgba(198, 40, 40, 0.12);
+  border: 1px solid rgba(198, 40, 40, 0.35);
+  color: var(--error, #b71c1c);
+}
+
+.alert-banner--info {
+  align-items: flex-start;
+  background-color: rgba(25, 118, 210, 0.08);
+  border: 1px solid rgba(25, 118, 210, 0.28);
+  color: var(--tx-body);
+}

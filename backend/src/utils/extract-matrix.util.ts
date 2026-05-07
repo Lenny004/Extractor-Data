@@ -7,6 +7,11 @@ import { uploadsDir } from '../middleware/upload.middleware';
 
 export const MAX_EXTRACT_ROWS = 5000;
 
+/** Fila cuyas celdas extraídas son todas vacías (tras trim), p. ej. `''` o solo espacios. */
+function isCompletelyEmptyExtractedRow(cells: string[]): boolean {
+    return cells.every((c) => String(c ?? '').trim() === '');
+}
+
 export type ColumnTransferValidation = {
     enabled: boolean;
     targetSheetName: string;
@@ -32,6 +37,7 @@ export type ExtractMatrixResult =
 /**
  * Lee el archivo subido y devuelve encabezados + filas formateadas como en `/api/extract`.
  * Centraliza validaciones para reutilizarlas en extracción y generación SQL.
+ * Omite filas en las que todas las columnas seleccionadas quedan vacías.
  */
 export function extractMatrixFromUploadedFile(params: {
     filename: string;
@@ -165,10 +171,21 @@ export function extractMatrixFromUploadedFile(params: {
         }
 
         const headerLabels = indicesToExtract.map((i) => String(headers[i] || `Column_${i + 1}`));
-        const limitedRows = dataRows.slice(0, MAX_EXTRACT_ROWS);
-        const rows = limitedRows.map((row) =>
-            indicesToExtract.map((colIdx) => formatValue((row as unknown[])[colIdx] ?? '')),
-        );
+
+        const rows: string[][] = [];
+        let truncated = false;
+        for (let ri = 0; ri < dataRows.length; ri++) {
+            const srcRow = dataRows[ri] as unknown[];
+            const extractedRow = indicesToExtract.map((colIdx) => formatValue(srcRow[colIdx] ?? ''));
+            if (isCompletelyEmptyExtractedRow(extractedRow)) {
+                continue;
+            }
+            if (rows.length >= MAX_EXTRACT_ROWS) {
+                truncated = true;
+                break;
+            }
+            rows.push(extractedRow);
+        }
 
         return {
             ok: true,
@@ -177,7 +194,7 @@ export function extractMatrixFromUploadedFile(params: {
                 headerLabels,
                 rows,
                 totalRowsInFile: dataRows.length,
-                truncated: dataRows.length > MAX_EXTRACT_ROWS,
+                truncated,
                 ...(columnTransferValidation ? { columnTransferValidation } : {}),
             },
         };

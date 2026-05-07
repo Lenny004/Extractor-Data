@@ -1,6 +1,6 @@
 /**
  * Estilos mínimos del shell (`App`): solo el layout vertical de página completa.
- * El resto de la UI de extracción vive en `src/styles/extraction-ui.css` (global) para que
+ * El resto de la UI de extracción vive en `src/styles/extraction-ui.css` (índice que importa `styles/extraction-ui/`) para que
  * los apartados lazy compartan la misma apariencia sin depender del encapsulado de cada componente.
  */
 .page {

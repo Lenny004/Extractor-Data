@@ -48,6 +48,7 @@ export const routes: Routes = [
       },
       {
         path: 'generador-sql',
+        canActivate: [requiereColumnasDetectadasGuard],
         loadComponent: () =>
           import('./features/sql-generator-section/sql-generator-section').then(
             (m) => m.SqlGeneratorSectionComponent,

@@ -1,32 +1,186 @@
 <div class="card">
   <div class="card__step-bar">
-    <span class="card__step-badge">SQL</span>
+    <span class="card__step-badge">4</span>
     <span class="card__step-label">Generador SQL</span>
   </div>
 
   <div class="card__body">
-    <div class="card-header">
-      <h1 class="card-header__title">Generador SQL</h1>
-      <p class="card-header__description">
-        Este módulo se entrega como esqueleto independiente: aquí podrás colocar formularios,
-        previsualización de sentencias y validaciones sin mezclar responsabilidades con la
-        extracción.
-      </p>
+    <nav class="breadcrumb" aria-label="Ruta de navegación">
+      <button class="breadcrumb__link" type="button" (click)="volverASubir()">Subir Archivo</button>
+      <span class="material-symbols-outlined breadcrumb__sep">chevron_right</span>
+      <button class="breadcrumb__link" type="button" (click)="volverAColumnas()">Seleccionar Columnas</button>
+      <span class="material-symbols-outlined breadcrumb__sep">chevron_right</span>
+      <span class="breadcrumb__current">Script SQL</span>
+    </nav>
+
+    <header class="sql-header">
+      <div class="sql-header__text">
+        <div class="card-header">
+          <h1 class="card-header__title">Generador SQL</h1>
+          <p class="card-header__description">
+            Define el nombre de la tabla y el motor. Genera un script con las columnas marcadas en el paso
+            anterior (mismos límites de filas que la extracción en servidor).
+          </p>
+        </div>
+      </div>
+      <div class="sql-stats" aria-live="polite">
+        <span class="sql-stats__label">Filas en el script</span>
+        <div class="sql-stats__value">
+          @if (sqlGenerated()) {
+            <span class="material-symbols-outlined sql-stats__check" aria-hidden="true">check_circle</span>
+            <span>{{ meta()!.rowCountInScript }}</span>
+          } @else {
+            <span class="sql-stats__placeholder">—</span>
+          }
+        </div>
+      </div>
+    </header>
+
+    @if (session.cuantasColumnasElegidas() === 0) {
+      <div class="alert-banner alert-banner--error" role="status">
+        <span class="material-symbols-outlined">warning</span>
+        <span>Marca al menos una columna en «Selección de Columnas» para poder generar SQL.</span>
+      </div>
+    }
+
+    @if (error()) {
+      <div class="alert-banner alert-banner--error sql-alert" role="alert">
+        <span class="material-symbols-outlined">error</span>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    <div class="sql-controls">
+      <div class="sql-controls__field">
+        <label class="field__label" for="sql-table-name">Nombre de la tabla</label>
+        <input
+          id="sql-table-name"
+          class="field__input"
+          type="text"
+          autocomplete="off"
+          [value]="nombreTabla()"
+          (input)="alCambiarNombreTabla(($any($event.target).value))"
+        />
+      </div>
+
+      <div class="sql-controls__field">
+        <label class="field__label" for="sql-dialect">Motor SQL</label>
+        <select
+          id="sql-dialect"
+          class="field__input field__select"
+          [value]="dialecto()"
+          (change)="alCambiarDialecto(($any($event.target).value))"
+        >
+          <option value="postgresql">PostgreSQL</option>
+          <option value="mysql">MySQL / MariaDB</option>
+        </select>
+      </div>
+
+      <div class="sql-controls__options">
+        <label class="sql-controls__check">
+          <input type="checkbox" [checked]="incluirCreate()" (change)="alternarIncluirCreate()" />
+          <span>Incluir <code>CREATE TABLE</code> (si existe)</span>
+        </label>
+        <label class="sql-controls__check">
+          <input type="checkbox" [checked]="vacioComoNull()" (change)="alternarVacioComoNull()" />
+          <span>Celdas vacías como <code>NULL</code></span>
+        </label>
+      </div>
+
+      <div class="sql-controls__actions">
+        <button
+          class="btn--primary"
+          type="button"
+          [disabled]="!puedeGenerar() || sqlGenerating()"
+          (click)="generar()"
+        >
+          @if (sqlGenerating()) {
+            <span class="material-symbols-outlined sql-spin" aria-hidden="true">progress_activity</span>
+            Generando…
+          } @else {
+            <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
+            Generar SQL
+          }
+        </button>
+      </div>
     </div>
 
-    <div class="alert-banner alert-banner--error" role="status">
-      <span class="material-symbols-outlined">construction</span>
-      <span>Pendiente de integración con backend y reglas de generación.</span>
+    @if (meta(); as m) {
+      <div class="alert-banner alert-banner--info sql-meta-banner" role="status">
+        <span class="material-symbols-outlined">info</span>
+        <span>
+          Hoja <strong>{{ m.sheetName }}</strong> · {{ m.rowCountInScript }} filas en el script
+          @if (m.totalRowsInFile > m.rowCountInScript) {
+            (de {{ m.totalRowsInFile }} en el archivo)
+          }
+          @if (m.truncated) {
+            <strong> · Script truncado al límite del servidor.</strong>
+          }
+        </span>
+      </div>
+    }
+
+    <div class="sql-preview">
+      <div class="sql-preview__header">
+        <div class="sql-preview__file">
+          <span class="sql-preview__dot sql-preview__dot--red" aria-hidden="true"></span>
+          <span class="sql-preview__dot sql-preview__dot--yellow" aria-hidden="true"></span>
+          <span class="sql-preview__dot sql-preview__dot--green" aria-hidden="true"></span>
+          <span class="sql-preview__filename">{{ (nombreTabla() || 'output') + '.sql' }}</span>
+        </div>
+        <div class="sql-preview__actions">
+          <button class="sql-preview__btn" type="button" [disabled]="!sqlSalida()" (click)="copiarSql()">
+            <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
+            @if (sqlCopied()) {
+              ¡Copiado!
+            } @else {
+              Copiar
+            }
+          </button>
+          <button
+            class="sql-preview__btn sql-preview__btn--download"
+            type="button"
+            [disabled]="!sqlSalida()"
+            (click)="descargarSql()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">download</span>
+            Descargar
+          </button>
+        </div>
+      </div>
+      <div class="sql-preview__code" role="region" aria-label="Vista previa del SQL generado">
+        @if (sqlLines().length) {
+          @for (line of sqlLines(); track line.num) {
+            <div class="sql-line">
+              <span class="sql-line__num">{{ line.num }}</span>
+              <span class="sql-line__text">
+                @for (seg of line.segments; track $index) {
+                  <span [class]="seg.cls">{{ seg.text }}</span>
+                }
+              </span>
+            </div>
+          }
+        } @else {
+          <p class="sql-preview__empty">Pulsa «Generar SQL» para ver el script aquí con resaltado básico.</p>
+        }
+      </div>
     </div>
+
+    @if (sqlGenerated()) {
+      <p class="sql-ready">
+        <span class="sql-ready__dot" aria-hidden="true"></span>
+        Script generado correctamente
+      </p>
+    }
 
     <div class="card-footer card-footer--between">
-      <a class="btn--back" routerLink="/subir">
-        <span class="material-symbols-outlined">upload_file</span>
-        Volver a subir
-      </a>
       <a class="btn--back" routerLink="/vista-previa">
         <span class="material-symbols-outlined">table_chart</span>
         Ir a vista previa
+      </a>
+      <a class="btn--back" routerLink="/columnas">
+        <span class="material-symbols-outlined">view_column</span>
+        Ajustar columnas
       </a>
     </div>
   </div>

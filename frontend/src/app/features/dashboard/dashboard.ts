@@ -46,7 +46,9 @@ export class DashboardComponent {
    */
   readonly usarContenidoAncho = computed(() => {
     const u = this.rutaUrl();
-    return u.includes('vista-previa') || u.includes('espacio-trabajo');
+    return (
+      u.includes('vista-previa') || u.includes('espacio-trabajo') || u.includes('generador-sql')
+    );
   });
 
   constructor() {
