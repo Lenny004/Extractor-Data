@@ -14,27 +14,10 @@ import { HttpClient, HttpEventType } from '@angular/common/http';
 import { FooterComponent } from './components/footer/footer';
 import { HeaderComponent } from './components/header/header';
 
-/** URL base del backend (desarrollo local). */
 const URL_SERVIDOR = 'http://localhost:3000';
 
-/**
- * Idea simple (tres “cajas” en pantalla):
- *
- * 1) Subes el Excel → el servidor lo guarda y te da un nombre interno del archivo (`idArchivoEnServidor`).
- * 2) Ves la lista de columnas y marcas cuáles quieres (`elegida: true/false`).
- * 3) Pides la tabla al servidor (`POST /api/extract`) con: ese nombre interno, la fila de títulos, y los
- *    números de columna elegidos. El servidor devuelve `titulosTabla` + `filasTabla`; la pantalla solo las pinta.
- *
- * Los nombres de variables/métodos están en español para leer el flujo sin diccionario técnico.
- */
-
-/** Estados de la barrita mientras subes el archivo (caja 1). */
 type EstadoSubida = 'idle' | 'uploading' | 'validating' | 'done' | 'error';
 
-/**
- * Una columna del Excel. Lo que viene del servidor usa `index`, `name`, etc.; aquí lo guardamos con nombres claros.
- * `posicion` = qué columna es (0 = primera). `elegida` = si entra en la tabla del paso 3.
- */
 interface ColumnaExcel {
   posicion: number;
   titulo: string;
@@ -55,7 +38,6 @@ export class App {
   private readonly destroyRef = inject(DestroyRef);
   private readonly inputArchivo = viewChild<ElementRef<HTMLInputElement>>('inputArchivo');
 
-  /** 1 = subir, 2 = columnas, 3 = tabla final. */
   pasoVisual = signal(1);
 
   // ----- Caja 1: subida -----
@@ -65,10 +47,12 @@ export class App {
   tamanoArchivoVista = signal('');
   mensajeError = signal('');
   arrastrandoArchivo = signal(false);
-  /** Nombre interno del archivo en el servidor (carpeta uploads), no el nombre bonito del usuario. */
   idArchivoEnServidor = signal('');
-  /** Fila del Excel donde están los títulos (normalmente 1). */
   filaEncabezados = signal(1);
+
+  // NUEVO: Variables para manejar las hojas
+  hojasDisponibles = signal<string[]>([]);
+  hojaSeleccionada = signal('');
 
   textoBarraProgreso = computed(() => {
     const e = this.estadoSubida();
@@ -99,7 +83,6 @@ export class App {
   cargandoListaColumnas = signal(false);
   readonly columnasPorPaginaEnPantalla = 5;
 
-  /** Números de columna (0,1,2…) de las filas con casilla marcada; eso se manda al paso 3. */
   posicionesColumnasElegidas = computed(() =>
     this.listaColumnas().filter((c) => c.elegida).map((c) => c.posicion)
   );
@@ -198,6 +181,12 @@ export class App {
     this.filaEncabezados.set(Math.max(1, valor));
   }
 
+  // NUEVO: Manejar el cambio del select de hojas
+  cuandoCambiaHoja(evento: Event) {
+    const select = evento.target as HTMLSelectElement;
+    this.hojaSeleccionada.set(select.value);
+  }
+
   quitarArchivoYEmpezarDeNuevo() {
     this.estadoSubida.set('idle');
     this.porcentajeBarra.set(0);
@@ -205,6 +194,8 @@ export class App {
     this.tamanoArchivoVista.set('');
     this.mensajeError.set('');
     this.idArchivoEnServidor.set('');
+    this.hojasDisponibles.set([]); // NUEVO: limpiar hojas
+    this.hojaSeleccionada.set(''); // NUEVO: limpiar hoja seleccionada
     this.limpiarDatosTabla();
     const input = this.inputArchivo()?.nativeElement;
     if (input) input.value = '';
@@ -216,12 +207,35 @@ export class App {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  // NUEVO: Método para pedir las hojas después de subir
+  private pedirHojasAlServidor(filename: string) {
+    this.http
+      .get<{ success: boolean; data: string[]; message?: string }>(`${URL_SERVIDOR}/api/sheets/${filename}`)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          if (res.success && res.data && res.data.length > 0) {
+            this.hojasDisponibles.set(res.data);
+            this.hojaSeleccionada.set(res.data[0]);
+          } else {
+            this.estadoSubida.set('error');
+            this.mensajeError.set('No se encontraron hojas en el archivo.');
+          }
+        },
+        error: (err) => {
+          this.estadoSubida.set('error');
+          this.mensajeError.set(err?.error?.message || 'Error al leer las hojas del archivo.');
+        }
+      });
+  }
+
   private procesarArchivoSubida(archivo: File) {
     const extension = archivo.name.split('.').pop()?.toLowerCase() ?? '';
-    if (!['xlsx', 'xls', 'csv'].includes(extension)) {
+    // CAMBIO 1: Agregado dat a la validación
+    if (!['xlsx', 'xls', 'csv', 'dat'].includes(extension)) {
       this.estadoSubida.set('error');
       this.porcentajeBarra.set(0);
-      this.mensajeError.set('Formato no soportado. Usa .xlsx, .xls o .csv');
+      this.mensajeError.set('Formato no soportado. Usa .xlsx, .xls, .csv o .dat');
       return;
     }
 
@@ -257,14 +271,19 @@ export class App {
             const cuerpo = evento.body;
             if (cuerpo?.data?.storedName) {
               this.idArchivoEnServidor.set(cuerpo.data.storedName);
+              // NUEVO: Pedir hojas apenas sube el archivo
+              this.pedirHojasAlServidor(cuerpo.data.storedName);
             }
             this.estadoSubida.set('validating');
             this.porcentajeBarra.set(75);
             setTimeout(() => this.porcentajeBarra.set(85), 400);
             setTimeout(() => this.porcentajeBarra.set(95), 800);
             setTimeout(() => {
-              this.porcentajeBarra.set(100);
-              this.estadoSubida.set('done');
+              // Solo mostrar completado si no falló la validación de hojas
+              if (this.estadoSubida() !== 'error') {
+                this.porcentajeBarra.set(100);
+                this.estadoSubida.set('done');
+              }
             }, 1200);
           }
         },
@@ -321,6 +340,7 @@ export class App {
         filename: this.idArchivoEnServidor(),
         headerRow: this.filaEncabezados(),
         columnIndices: columnasQueQuiero,
+        sheetName: this.hojaSeleccionada(), //Enviar hoja seleccionada
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -346,7 +366,7 @@ export class App {
             delServidor ||
               (sinRed
                 ? 'No hubo respuesta del servidor. ¿Está encendido el backend en el puerto 3000?'
-                : `Fallo al pedir la tabla${codigo !== '' ? ` (HTTP ${codigo})` : ''}. Si ves 404, la ruta debe ser POST /api/extract.`)
+                : `Fallo al pedir la tabla${codigo !== '' ? ` (HTTP ${codigo})` : ''}. Verifica los datos del archivo.`)
           );
         },
       });
@@ -370,7 +390,8 @@ export class App {
 
   private pedirListaColumnasAlServidor() {
     this.cargandoListaColumnas.set(true);
-    const url = `${URL_SERVIDOR}/api/columns/${this.idArchivoEnServidor()}?headerRow=${this.filaEncabezados()}`;
+    // NUEVO: Enviar hoja seleccionada en la URL
+    const url = `${URL_SERVIDOR}/api/columns/${this.idArchivoEnServidor()}?headerRow=${this.filaEncabezados()}&sheetName=${encodeURIComponent(this.hojaSeleccionada())}`;
 
     this.http
       .get<{
@@ -398,8 +419,9 @@ export class App {
           }
           this.cargandoListaColumnas.set(false);
         },
-        error: () => {
+        error: (err) => {
           this.cargandoListaColumnas.set(false);
+          this.mensajeErrorTabla.set(err?.error?.message || 'Error al procesar las columnas.');
         },
       });
   }
@@ -431,5 +453,28 @@ export class App {
     if (numeroPagina >= 1 && numeroPagina <= this.totalPaginasListaColumnas()) {
       this.paginaListaColumnas.set(numeroPagina);
     }
+  }
+
+  // NUEVO: Convierte los datos de la tabla en un string JSON formateado
+  jsonVista = computed(() => {
+    const encabezados = this.titulosTabla();
+    const filas = this.filasTabla();
+    
+    // Mapeamos cada fila a un objeto usando los encabezados como llaves
+    const arregloObjetos = filas.map(fila => {
+      const obj: any = {};
+      encabezados.forEach((titulo, index) => {
+        obj[titulo] = fila[index];
+      });
+      return obj;
+    });
+
+    return JSON.stringify(arregloObjetos, null, 2);
+  });
+
+  copiarAlPortapapeles() {
+    navigator.clipboard.writeText(this.jsonVista());
+    // Aquí podrías poner un SnackBar de Angular Material avisando que se copió
+    alert('JSON copiado al portapapeles.');
   }
 }
