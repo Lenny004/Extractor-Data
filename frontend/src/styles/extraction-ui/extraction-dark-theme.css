@@ -1,0 +1,129 @@
+/* --- MODO OSCURO GLOBAL --- */
+body.dark-theme {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+body.dark-theme .card,
+body.dark-theme .side-menu,
+body.dark-theme .info-card {
+    background-color: #1e1e1e;
+    border-color: #333;
+    color: #e0e0e0;
+}
+
+body.dark-theme .card-header__title,
+body.dark-theme .card-header__description,
+body.dark-theme .upload-zone__heading {
+    color: #e0e0e0;
+}
+
+body.dark-theme .upload-zone {
+    background-color: #2a2a2a;
+    border-color: #444;
+}
+
+body.dark-theme .ws-table__th {
+    background-color: #333;
+    color: #fff;
+}
+
+body.dark-theme .ws-table__td {
+    border-color: #444;
+}
+
+/* =========================================
+   ARREGLOS MODO OSCURO (NIVEL DIOS)
+   ========================================= */
+
+/* 1. HEADER: Matar el fondo blanco desde adentro */
+/* Le quitamos el fondo a cualquier contenedor hijo directo del header */
+body.dark-theme app-header,
+body.dark-theme app-header>*,
+body.dark-theme app-header div,
+body.dark-theme app-header nav,
+body.dark-theme header {
+    background-color: #1e1e1e !important;
+    border-color: #333 !important;
+}
+
+/* Letras del header claras */
+body.dark-theme app-header span,
+body.dark-theme app-header a,
+body.dark-theme app-header button {
+    color: #e0e0e0 !important;
+}
+
+/* El botoncito del modo oscuro para que se vea bien */
+body.dark-theme app-header button {
+    border-color: #555 !important;
+    background-color: #2a2a2a !important;
+}
+
+/* 2. MENÚ LATERAL: Adiós al azul oscuro, hola blanco/gris claro */
+body.dark-theme .side-menu *,
+body.dark-theme [class*="menu"] a,
+body.dark-theme [class*="menu"] span {
+    color: #e0e0e0 !important;
+    /* Letras claritas para que resalten */
+}
+
+/* Resaltar la opción seleccionada ("Subir") */
+body.dark-theme .side-menu .active,
+body.dark-theme [class*="active"] {
+    background-color: #333333 !important;
+    color: #ffffff !important;
+    font-weight: bold !important;
+    border-radius: 8px;
+}
+
+body.dark-theme .card__step-bar {
+    background-color: #2a2a2a !important;
+    border-bottom: 1px solid #333 !important;
+}
+
+body.dark-theme .card__step-bar * {
+    color: #e0e0e0 !important;
+}
+
+/* =========================================
+    5. TABLAS, INPUTS Y BREADCRUMBS (VISTA PREVIA)
+   ========================================= */
+
+/* Matar el fondo blanco de la tabla y celdas */
+body.dark-theme table,
+body.dark-theme .ws-table,
+body.dark-theme th,
+body.dark-theme td,
+body.dark-theme tr {
+    background-color: transparent !important;
+    color: #e0e0e0 !important;
+    border-color: #444 !important;
+}
+
+/* Filas intercaladas (Pares e impares con grises oscuros) */
+body.dark-theme tbody tr:nth-child(odd) {
+    background-color: #1e1e1e !important;
+    /* Gris base */
+}
+
+body.dark-theme tbody tr:nth-child(even) {
+    background-color: #2a2a2a !important;
+    /* Gris un poquito más claro para distinguir */
+}
+
+/* Arreglar los select y el input blanco de paginación */
+body.dark-theme input,
+body.dark-theme select,
+body.dark-theme .field__input {
+    background-color: #2a2a2a !important;
+    color: #e0e0e0 !important;
+    border: 1px solid #555 !important;
+}
+
+/* Cambiar textos azules oscuros a celeste (Breadcrumbs y links) */
+body.dark-theme a,
+body.dark-theme .breadcrumb,
+body.dark-theme [class*="link"] {
+    color: #90caf9 !important;
+}

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, inject, viewChild } fro
 
 import { DashboardEventBusService } from '../../core/services/dashboard-event-bus.service';
 import { ExtractionSessionService } from '../../core/services/extraction-session.service';
+import { signal } from '@angular/core';
 
 /**
  * Apartado "Subir": responsabilidad única = capturar el archivo y opciones básicas (fila de encabezado).
@@ -26,6 +27,13 @@ export class UploadSectionComponent {
 
   /** Referencia al input file oculto (misma técnica que el componente monolítico). */
   private readonly inputArchivo = viewChild<ElementRef<HTMLInputElement>>('inputArchivo');
+
+  terminosAceptados = signal(false);
+
+aceptarTerminos(evento: Event) {
+  const input = evento.target as HTMLInputElement;
+  this.terminosAceptados.set(input.checked);
+}
 
   /**
    * Dispara el selector nativo de archivos.

@@ -15,9 +15,21 @@
     </div>
 
     @if (session.estadoSubida() === 'idle') {
+      
+      <div class="legal-notice">
+        <strong>🛡️ Aviso de Privacidad y Seguridad:</strong> El procesamiento de datos se realiza de forma temporal. Los archivos subidos se <strong>autodestruyen del servidor en 2 minutos</strong>. No almacenamos copias ni nos hacemos responsables por el manejo de información sensible.
+      </div>
+
+      <div class="legal-checkbox-container">
+        <input type="checkbox" id="legalCheck" class="legal-checkbox" (change)="aceptarTerminos($event)">
+        <label for="legalCheck" class="legal-label">He leído y asumo la responsabilidad del uso de mis datos.</label>
+      </div>
+
       <div
+      
         class="upload-zone"
         [class.upload-zone--drag-over]="session.arrastrandoArchivo()"
+        [class.upload-zone--disabled]="!terminosAceptados()"
         (dragover)="session.cuandoArrastraEncima($event)"
         (dragleave)="session.cuandoArrastraFuera($event)"
         (drop)="session.cuandoSueltaArchivo($event)"

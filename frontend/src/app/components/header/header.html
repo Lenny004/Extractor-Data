@@ -4,6 +4,13 @@
     <h2 class="header__title">Extractor de Datos</h2>
   </div>
 
+  <button (click)="toggleModoOscuro()" style="padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid #ccc; background: transparent; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+  <span class="material-symbols-outlined">
+    {{ modoOscuroActivo() ? 'light_mode' : 'dark_mode' }}
+  </span>
+  {{ modoOscuroActivo() ? 'Claro' : 'Oscuro' }}
+</button>
+
   <div class="header__right">
     <nav class="header__nav" aria-label="Navegación principal">
       <a class="header__nav-link" href="#">Documentación</a>
