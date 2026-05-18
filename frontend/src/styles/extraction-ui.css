@@ -1,0 +1,19 @@
+﻿/**
+ * Índice de estilos del flujo de extracción (UI global).
+ * El orden de los imports reproduce la cascada del archivo monolítico anterior.
+ */
+@import './extraction-ui/common.css';
+@import './extraction-ui/extraction-layout.css';
+@import './extraction-ui/extraction-card.css';
+@import './extraction-ui/extraction-upload-zone.css';
+@import './extraction-ui/extraction-file-info.css';
+@import './extraction-ui/extraction-options-grid.css';
+@import './extraction-ui/extraction-field.css';
+@import './extraction-ui/extraction-progress.css';
+@import './extraction-ui/extraction-card-footer.css';
+@import './extraction-ui/extraction-info-cards.css';
+@import './extraction-ui/extraction-breadcrumb.css';
+@import './extraction-ui/extraction-column-selection.css';
+@import './extraction-ui/extraction-responsive.css';
+@import './extraction-ui/extraction-json-preview.css';
+@import './extraction-ui/extraction-dark-theme.css';

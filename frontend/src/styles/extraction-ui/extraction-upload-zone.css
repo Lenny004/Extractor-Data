@@ -1,0 +1,128 @@
+/* Zona de arrastrar y soltar / selección de archivo */
+
+.upload-zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  border: 2px dashed var(--border);
+  border-radius: var(--rad-lg);
+  background-color: var(--bg-subtle);
+  padding: 4rem 1.5rem;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+}
+
+.upload-zone:hover {
+  border-color: var(--primary);
+  background-color: var(--primary-lt);
+}
+
+.upload-zone__icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: var(--rad-full);
+  background-color: var(--primary-lt);
+  color: var(--primary);
+}
+
+.upload-zone__icon-wrapper .material-symbols-outlined {
+  font-size: 2.5rem;
+}
+
+.upload-zone__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.upload-zone__heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--black);
+}
+
+.upload-zone__hint {
+  font-size: 0.875rem;
+  color: var(--tx-muted);
+}
+
+.upload-zone__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 8.75rem;
+  height: 2.75rem;
+  padding: 0 1.5rem;
+  background-color: var(--bg-card);
+  color: var(--tx-body);
+  font-size: 0.875rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: background-color 0.2s;
+}
+
+.upload-zone__btn:hover {
+  background-color: var(--bg-subtle);
+}
+
+.upload-zone__input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-zone--drag-over {
+  border-color: var(--primary);
+  background-color: var(--primary-lt);
+  transform: scale(1.01);
+}
+
+/* --- Aviso Legal --- */
+.legal-notice {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #ffeeba;
+  font-size: 0.9rem;
+}
+
+.legal-checkbox-container {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legal-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.legal-label {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* --- Bloqueo de la zona de subida --- */
+.upload-zone--disabled {
+  opacity: 0.5;
+  filter: grayscale(100%);
+  pointer-events: none; /* Esto "apaga" completamente el arrastrar, soltar y hacer clic */
+  cursor: not-allowed;
+}

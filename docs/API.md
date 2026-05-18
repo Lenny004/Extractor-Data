@@ -15,7 +15,8 @@ Documentar aquí los endpoints conforme se implementen.
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | POST | `/upload` | Subir archivo Excel/CSV |
-| POST | `/transform` | Transformar datos a SQL |
+| POST | `/extract` | Extraer filas y columnas seleccionadas |
+| POST | `/generate-sql` | Generar script SQL (`CREATE` opcional + `INSERT`) desde el mismo cuerpo que `/extract` más `tableName`, `dialect`, etc. |
 | GET | `/health` | Health check |
 
 ### Formato de respuesta

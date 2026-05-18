@@ -1,0 +1,10 @@
+/* Grid de opciones del paso de carga (p. ej. hoja / fila inicial) */
+
+.options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2.5rem;
+}

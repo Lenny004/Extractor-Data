@@ -1,0 +1,218 @@
+<!-- Paso 1: subir archivo (UI movida desde el componente raíz monolítico). -->
+<div class="card">
+  <div class="card__step-bar">
+    <span class="card__step-badge">1</span>
+    <span class="card__step-label">Paso 1 de 3: Fuente de Datos</span>
+  </div>
+
+  <div class="card__body">
+    <div class="card-header">
+      <h1 class="card-header__title">Sube tu Hoja de Cálculo</h1>
+      <p class="card-header__description">
+        Transforma tus hojas de cálculo complejas en datos limpios y utilizables. Comienza
+        arrastrando y soltando tu archivo a continuación.
+      </p>
+    </div>
+
+    @if (session.estadoSubida() === 'idle') {
+      
+      <div class="legal-notice">
+        <strong>🛡️ Aviso de Privacidad y Seguridad:</strong> El procesamiento de datos se realiza de forma temporal. Los archivos subidos se <strong>autodestruyen del servidor en 2 minutos</strong>. No almacenamos copias ni nos hacemos responsables por el manejo de información sensible.
+      </div>
+
+      <div class="legal-checkbox-container">
+        <input type="checkbox" id="legalCheck" class="legal-checkbox" (change)="aceptarTerminos($event)">
+        <label for="legalCheck" class="legal-label">He leído y asumo la responsabilidad del uso de mis datos.</label>
+      </div>
+
+      <div
+      
+        class="upload-zone"
+        [class.upload-zone--drag-over]="session.arrastrandoArchivo()"
+        [class.upload-zone--disabled]="!terminosAceptados()"
+        (dragover)="session.cuandoArrastraEncima($event)"
+        (dragleave)="session.cuandoArrastraFuera($event)"
+        (drop)="session.cuandoSueltaArchivo($event)"
+        (click)="abrirSelectorArchivo()"
+      >
+        <div class="upload-zone__icon-wrapper">
+          <span class="material-symbols-outlined">cloud_upload</span>
+        </div>
+        <div class="upload-zone__content">
+          <p class="upload-zone__heading">Suelta los archivos aquí o explora</p>
+          <p class="upload-zone__hint">Formatos soportados: .xlsx, .xls, .csv, .dat</p>
+        </div>
+        <button
+          class="upload-zone__btn"
+          type="button"
+          (click)="$event.stopPropagation(); abrirSelectorArchivo()"
+        >
+          Seleccionar Archivo
+        </button>
+        <input
+          #inputArchivo
+          class="upload-zone__input"
+          type="file"
+          accept=".xlsx,.xls,.csv,.dat"
+          aria-label="Seleccionar un archivo"
+          title="Seleccionar un archivo"
+          (change)="session.cuandoEligeArchivo($event)"
+          (click)="$event.stopPropagation()"
+        />
+      </div>
+    } @else {
+      <div
+        class="file-info"
+        [class.file-info--error]="session.estadoSubida() === 'error'"
+        [class.file-info--done]="session.estadoSubida() === 'done'"
+      >
+        <div class="file-info__icon-wrapper">
+          @if (session.estadoSubida() === 'error') {
+            <span class="material-symbols-outlined file-info__icon--error">error</span>
+          } @else if (session.estadoSubida() === 'done') {
+            <span class="material-symbols-outlined file-info__icon--done">check_circle</span>
+          } @else {
+            <span class="material-symbols-outlined">description</span>
+          }
+        </div>
+        <div class="file-info__details">
+          <p class="file-info__name">{{ session.nombreArchivo() }}</p>
+          <p class="file-info__size">{{ session.tamanoArchivoVista() }}</p>
+        </div>
+        <button
+          class="file-info__remove"
+          type="button"
+          (click)="session.quitarArchivoYEmpezarDeNuevo()"
+          aria-label="Eliminar archivo"
+        >
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+    }
+
+    <div class="options-grid">
+      <div class="field">
+        <label class="field__label" for="header-row">Número de Fila de Encabezado</label>
+        <div class="field__input-wrapper">
+          <input
+            class="field__input"
+            id="header-row"
+            type="number"
+            min="1"
+            [value]="session.filaEncabezados()"
+            (input)="session.cuandoCambiaFilaEncabezado($event)"
+          />
+          <span class="field__icon material-symbols-outlined">numbers</span>
+        </div>
+        <p class="field__hint">
+          El valor por defecto es 1. Si tus datos comienzan más abajo, especifica la fila.
+        </p>
+      </div>
+
+      @if (session.hojasDisponibles().length > 0) {
+        <div class="field">
+          <label class="field__label" for="sheet-select">Hoja a extraer</label>
+          <div class="field__input-wrapper">
+            <select
+              class="field__input"
+              id="sheet-select"
+              [value]="session.hojaSeleccionada()"
+              (change)="session.cuandoCambiaHoja($event)"
+            >
+              @for (hoja of session.hojasDisponibles(); track hoja) {
+                <option [value]="hoja">{{ hoja }}</option>
+              }
+            </select>
+            <span class="field__icon material-symbols-outlined">layers</span>
+          </div>
+        </div>
+      }
+
+      @if (session.hojasDisponibles().length > 1) {
+        <div class="field">
+          <label class="field__label" for="sheet-target-validate">Hoja destino (validación de columnas)</label>
+          <div class="field__input-wrapper">
+            <select
+              class="field__input"
+              id="sheet-target-validate"
+              [value]="session.hojaDestinoValidacion()"
+              (change)="session.cuandoCambiaHojaDestinoValidacion($event)"
+            >
+              <option value="">Ninguna — extraer sin comparar otra hoja</option>
+              @for (hoja of session.hojasDisponibles(); track hoja) {
+                <option [value]="hoja" [disabled]="hoja === session.hojaSeleccionada()">{{ hoja }}</option>
+              }
+            </select>
+            <span class="field__icon material-symbols-outlined">compare_arrows</span>
+          </div>
+          <p class="field__hint">
+            Opcional: antes de transferir datos, se comprueba que la hoja origen tenga al menos tantas columnas
+            como esta hoja. Si hay más columnas seleccionadas que las que admite la destino, solo se transfieren
+            las primeras (en el orden de tu selección) y se indica el resto como omitidas.
+          </p>
+        </div>
+      }
+
+      @if (session.debeMostrarBarraProgreso()) {
+        <div
+          class="progress-block"
+          [class.progress-block--error]="session.estadoSubida() === 'error'"
+          [class.progress-block--done]="session.estadoSubida() === 'done'"
+        >
+          <div class="progress-block__header">
+            <span class="progress-block__label">{{ session.textoBarraProgreso() }}</span>
+            <span class="progress-block__percent">{{ session.porcentajeBarra() }}%</span>
+          </div>
+          <div class="progress-block__track">
+            <div class="progress-block__bar" [style.width.%]="session.porcentajeBarra()"></div>
+          </div>
+          <p class="progress-block__status">{{ session.detalleBarraProgreso() }}</p>
+        </div>
+      }
+    </div>
+
+    <div class="card-footer">
+      <div class="card-footer__info">
+        <span class="material-symbols-outlined">info</span>
+        <span>Archivos grandes (10MB+) pueden tardar unos momentos.</span>
+      </div>
+      <div class="card-footer__actions">
+        <button
+          class="btn--primary"
+          type="button"
+          [disabled]="session.estadoSubida() !== 'done'"
+          (click)="solicitarPasoSeleccionColumnas()"
+        >
+          Siguiente: Mapear Columnas
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="info-grid">
+  <div class="info-card">
+    <span class="info-card__icon material-symbols-outlined">security</span>
+    <div>
+      <h4 class="info-card__title">Procesamiento Seguro</h4>
+      <p class="info-card__description">
+        Los datos se procesan localmente en tu sesión y están encriptados.
+      </p>
+    </div>
+  </div>
+  <div class="info-card">
+    <span class="info-card__icon material-symbols-outlined">auto_fix_high</span>
+    <div>
+      <h4 class="info-card__title">Limpieza Automática</h4>
+      <p class="info-card__description">Detectamos automáticamente formatos.</p>
+    </div>
+  </div>
+  <div class="info-card">
+    <span class="info-card__icon material-symbols-outlined">download</span>
+    <div>
+      <h4 class="info-card__title">Listo para Exportar</h4>
+      <p class="info-card__description">Convierte a un nuevo excel o un script de Base de Datos</p>
+    </div>
+  </div>
+</div>

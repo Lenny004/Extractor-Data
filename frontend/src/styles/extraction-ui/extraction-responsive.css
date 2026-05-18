@@ -1,0 +1,89 @@
+/* Consultas compartidas entre módulos (orden igual al monolito original) */
+
+@media (max-width: 640px) {
+  .main {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .side-menu {
+    width: 100%;
+    height: auto;
+    position: static;
+  }
+
+  .main__content {
+    width: 100%;
+  }
+
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .col-table__head,
+  .col-table__row {
+    grid-template-columns: 2rem 2.5rem 1fr 0 0;
+  }
+
+  .col-table__cell--sample,
+  .col-table__cell--action {
+    display: none;
+  }
+
+  .col-header {
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .card-footer {
+    flex-direction: row;
+  }
+
+  .card-footer__actions {
+    width: auto;
+  }
+
+  .btn--primary {
+    flex: none;
+  }
+
+  .info-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .col-toolbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .col-toolbar__search {
+    flex: 1;
+    max-width: 22rem;
+  }
+
+  .col-pagination-bar {
+    flex-direction: row;
+  }
+
+  .col-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .col-header__right {
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .main {
+    padding: 3rem 0;
+  }
+
+  .card__body {
+    padding: 3rem;
+  }
+}

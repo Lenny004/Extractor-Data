@@ -1,0 +1,44 @@
+/* Contenedor de paso (tarjeta con barra de progreso de pasos) */
+
+.card {
+  width: 100%;
+  max-width: 50rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-lg);
+  box-shadow: var(--sh-card);
+  overflow: hidden;
+}
+
+.card__step-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem;
+}
+
+.card__step-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background-color: var(--primary);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: var(--rad-full);
+  flex-shrink: 0;
+}
+
+.card__step-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--tx-body);
+}
+
+.card__body {
+  padding: 3rem;
+}

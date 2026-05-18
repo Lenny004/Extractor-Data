@@ -1,0 +1,34 @@
+/* Migas de navegación dentro del flujo */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.8125rem;
+}
+
+.breadcrumb__link {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+.breadcrumb__link:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb__sep {
+  font-size: 1rem;
+  color: var(--tx-muted);
+}
+
+.breadcrumb__current {
+  color: var(--tx-muted);
+  font-weight: 500;
+}

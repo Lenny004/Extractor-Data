@@ -1,0 +1,89 @@
+/* Shell del dashboard: área principal y menú lateral */
+
+.main {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  padding: 2rem 3rem;
+  position: relative;
+}
+
+.side-menu {
+  width: 16rem;
+  height: calc(100vh - 9rem);
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-lg);
+  box-shadow: var(--sh-card);
+  position: sticky;
+  top: 5.5rem;
+  margin-left: 2rem;
+  flex-shrink: 0;
+}
+
+.main__content {
+  flex: 1;
+  min-width: 0;
+  max-width: 50rem;
+  margin: 0 auto;
+}
+
+/* Paso 3: más ancho para tablas con muchas columnas */
+.main__content--wide {
+  max-width: min(100%, 88rem);
+}
+
+.side-menu__header {
+  padding: 1.5rem;
+}
+
+.side-menu__title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--tx-body);
+  line-height: 1.2;
+}
+
+.side-menu__nav {
+  flex: 1;
+  margin-top: 1rem;
+  padding: 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.side-menu__link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--rad-md);
+  text-decoration: none;
+  color: var(--tx-body);
+  transition:
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.side-menu__link:hover {
+  color: var(--primary);
+  background-color: var(--primary-lt);
+}
+
+.side-menu__link--active {
+  color: var(--primary);
+  font-weight: 700;
+  background-color: var(--primary-lt);
+  border-right: 2px solid var(--primary);
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.side-menu__filled-icon {
+  font-variation-settings: 'FILL' 1;
+}

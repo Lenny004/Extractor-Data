@@ -1,0 +1,81 @@
+<!--
+  Plantilla del Dashboard: layout + navegación lateral.
+  Buena práctica: el contenido funcional vive en rutas hijas (`router-outlet`) cargadas de forma perezosa.
+-->
+<main class="main">
+  <aside class="side-menu side-menu--inline" aria-label="Menú lateral">
+    <div class="side-menu__header">
+      <h2 class="side-menu__title">Extracción de Datos</h2>
+    </div>
+
+    <nav class="side-menu__nav" aria-label="Pasos de extracción">
+      <a
+        href="#"
+        class="side-menu__link"
+        [class.side-menu__link--active]="rutaUrl().includes('/subir')"
+        (click)="alPulsarSubirEnMenu($event)"
+      >
+        <span
+          class="material-symbols-outlined"
+          [class.side-menu__filled-icon]="rutaUrl().includes('/subir')"
+          >upload_file</span
+        >
+        <span>Subir</span>
+      </a>
+
+      <a
+        class="side-menu__link"
+        routerLink="/columnas"
+        routerLinkActive="side-menu__link--active"
+        href="#"
+      >
+        <span class="material-symbols-outlined" routerLinkActive="side-menu__filled-icon"
+          >view_column</span
+        >
+        <span>Selección de Columnas</span>
+      </a>
+
+      <a
+        href="#"
+        class="side-menu__link"
+        [class.side-menu__link--active]="rutaUrl().includes('/vista-previa')"
+        (click)="alPulsarVistaPreviaEnMenu($event)"
+      >
+        <span
+          class="material-symbols-outlined"
+          [class.side-menu__filled-icon]="rutaUrl().includes('/vista-previa')"
+          >table_chart</span
+        >
+        <span>Vista Previa</span>
+      </a>
+
+      <a
+        class="side-menu__link"
+        routerLink="/espacio-trabajo"
+        routerLinkActive="side-menu__link--active"
+        href="#"
+      >
+        <span class="material-symbols-outlined" routerLinkActive="side-menu__filled-icon"
+          >grid_view</span
+        >
+        <span>Espacio de Trabajo</span>
+      </a>
+
+      <a
+        class="side-menu__link"
+        routerLink="/generador-sql"
+        routerLinkActive="side-menu__link--active"
+        href="#"
+      >
+        <span class="material-symbols-outlined" routerLinkActive="side-menu__filled-icon"
+          >database</span
+        >
+        <span>Generador SQL</span>
+      </a>
+    </nav>
+  </aside>
+
+  <div class="main__content" [class.main__content--wide]="usarContenidoAncho()">
+    <router-outlet />
+  </div>
+</main>

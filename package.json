@@ -9,5 +9,8 @@
     "backend": "cd backend && npm run dev",
     "backend:install": "cd backend && npm install",
     "install:all": "npm run frontend:install && npm run backend:install"
+  },
+  "devDependencies": {
+    "@types/xlsx": "^0.0.35"
   }
 }
