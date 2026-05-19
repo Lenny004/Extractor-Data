@@ -14,7 +14,6 @@ export type DashboardSectionRoute =
   | 'subir'
   | 'columnas'
   | 'vista-previa'
-  | 'espacio-trabajo'
   | 'generador-sql';
 
 /**

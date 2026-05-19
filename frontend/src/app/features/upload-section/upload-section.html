@@ -21,7 +21,7 @@
       </div>
 
       <div class="legal-checkbox-container">
-        <input type="checkbox" id="legalCheck" class="legal-checkbox" (change)="aceptarTerminos($event)">
+        <input type="checkbox" id="legalCheck" class="legal-checkbox" [checked]="terminosAceptados()" (change)="aceptarTerminos($event)">
         <label for="legalCheck" class="legal-label">He leído y asumo la responsabilidad del uso de mis datos.</label>
       </div>
 
@@ -125,6 +125,18 @@
             </select>
             <span class="field__icon material-symbols-outlined">layers</span>
           </div>
+          @if (session.hojasVacias().length > 0) {
+            <div class="alert-banner alert-banner--warning" style="margin-top: 0.5rem;">
+              <span class="material-symbols-outlined">info</span>
+              <span>
+                Hojas vacías detectadas:
+                @for (vacia of session.hojasVacias(); track vacia) {
+                  <strong>{{ vacia }}</strong>{{ $last ? '' : ', ' }}
+                }
+                — no se usarán en la extracción.
+              </span>
+            </div>
+          }
         </div>
       }
 

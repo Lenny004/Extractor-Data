@@ -1,5 +1,7 @@
 /* --- MODO OSCURO GLOBAL --- */
 body.dark-theme {
+    --tx-body: #e0e0e0;
+    --tx-muted: #e0e0e0;
     background-color: #121212;
     color: #e0e0e0;
 }
@@ -23,13 +25,28 @@ body.dark-theme .upload-zone {
     border-color: #444;
 }
 
-body.dark-theme .ws-table__th {
+body.dark-theme .upload-zone:hover {
     background-color: #333;
-    color: #fff;
+    border-color: #666;
+}
+
+body.dark-theme .ws-table-wrap {
+    background-color: #1e1e1e !important;
+}
+
+body.dark-theme .ws-table__th {
+    background-color: rgb(30, 30, 30) !important;
+    color: #e0e0e0 !important;
+}
+
+body.dark-theme .ws-table__th--num,
+body.dark-theme .ws-table__td--num {
+    color: #e0e0e0;
 }
 
 body.dark-theme .ws-table__td {
     border-color: #444;
+    color: #e0e0e0;
 }
 
 /* =========================================
@@ -86,6 +103,11 @@ body.dark-theme .card__step-bar * {
     color: #e0e0e0 !important;
 }
 
+body.dark-theme .card__step-badge {
+    background-color: #ccc !important;
+    color: #333 !important;
+}
+
 /* =========================================
     5. TABLAS, INPUTS Y BREADCRUMBS (VISTA PREVIA)
    ========================================= */
@@ -121,9 +143,200 @@ body.dark-theme .field__input {
     border: 1px solid #555 !important;
 }
 
-/* Cambiar textos azules oscuros a celeste (Breadcrumbs y links) */
+/* Textos azules → blancos en modo oscuro (breadcrumbs, links, badges, etc.) */
 body.dark-theme a,
 body.dark-theme .breadcrumb,
 body.dark-theme [class*="link"] {
-    color: #90caf9 !important;
+    color: #e0e0e0 !important;
 }
+
+body.dark-theme .type-badge--number {
+    color: #e0e0e0 !important;
+}
+
+/* Texto blanco para header, labels, hints, info-cards, y footer */
+body.dark-theme .header__title,
+body.dark-theme .field__label,
+body.dark-theme .field__hint,
+body.dark-theme .upload-zone__hint,
+body.dark-theme .info-card__title,
+body.dark-theme .info-card__description,
+body.dark-theme app-footer .footer,
+body.dark-theme .footer {
+    color: #fff !important;
+}
+
+/* Status badge */
+body.dark-theme .status-badge__value {
+    color: #fff !important;
+}
+
+/* SQL section: fondos rgb(30, 30, 30) */
+body.dark-theme .sql-controls {
+    background-color: rgb(30, 30, 30) !important;
+}
+
+body.dark-theme .sql-stats {
+    background-color: rgb(30, 30, 30) !important;
+}
+
+body.dark-theme .sql-controls__check {
+    color: #fff !important;
+}
+
+body.dark-theme .sql-controls__check code {
+    color: #fff !important;
+}
+
+/* Botones: fondos oscuros, texto blanco */
+body.dark-theme .upload-zone__btn {
+    background-color: #2a2a2a !important;
+    color: #fff !important;
+    border-color: #555 !important;
+}
+
+body.dark-theme .upload-zone__btn:hover {
+    background-color: #3a3a3a !important;
+}
+
+body.dark-theme .btn--back,
+body.dark-theme .col-toolbar__btn,
+body.dark-theme .col-pagination__btn {
+    color: #e0e0e0 !important;
+    border-color: #555 !important;
+}
+
+body.dark-theme .btn--back:hover,
+body.dark-theme .col-toolbar__btn:hover,
+body.dark-theme .col-pagination__btn:hover:not(:disabled) {
+    background-color: #333 !important;
+    border-color: #777 !important;
+    color: #fff !important;
+}
+
+body.dark-theme .btn-copy {
+    background-color: #2a2a2a !important;
+    border-color: #555 !important;
+    color: #e0e0e0 !important;
+}
+
+body.dark-theme .btn-copy:hover {
+    background-color: #3a3a3a !important;
+}
+
+/* Col-table en modo oscuro */
+body.dark-theme .col-table {
+    border-color: #444 !important;
+}
+
+body.dark-theme .col-table__head {
+    background-color: #2a2a2a !important;
+    border-color: #444 !important;
+}
+
+body.dark-theme .col-table__row {
+    border-color: #444 !important;
+}
+
+body.dark-theme .col-table__row:hover {
+    background-color: #2a2a2a !important;
+}
+
+body.dark-theme .col-table__row--selected {
+    background-color: #1a2a3a !important;
+}
+
+body.dark-theme .col-table__row--selected:hover {
+    background-color: #1e3044 !important;
+}
+
+body.dark-theme .col-table__cell--name {
+    color: #e0e0e0 !important;
+}
+
+body.dark-theme .col-table__cell--sample {
+    color: #94a3b8 !important;
+}
+
+body.dark-theme .col-toolbar__search {
+    background-color: #2a2a2a !important;
+    border-color: #555 !important;
+}
+
+body.dark-theme .col-toolbar__search .material-symbols-outlined {
+    color: #ccc !important;
+}
+
+body.dark-theme .col-toolbar__search input {
+    color: #e0e0e0 !important;
+}
+
+body.dark-theme .col-toolbar__search input::placeholder {
+    color: #666 !important;
+}
+
+/* Type badges: mantener colores originales incluso en modo oscuro */
+body.dark-theme .type-badge--number {
+    background-color: #dbeafe !important;
+    color: #2563eb !important;
+}
+
+body.dark-theme .type-badge--date {
+    background-color: #ffedd5 !important;
+    color: #ea580c !important;
+}
+
+body.dark-theme .type-badge--text {
+    background-color: #f3e8ff !important;
+    color: #9333ea !important;
+}
+
+body.dark-theme .type-badge--boolean {
+    background-color: #dcfce7 !important;
+    color: #16a34a !important;
+}
+
+body.dark-theme .type-badge--unknown {
+    background-color: #f1f5f9 !important;
+    color: #64748b !important;
+}
+
+/* File info en modo oscuro */
+body.dark-theme .file-info {
+    background-color: #2a2a2a !important;
+    border-color: #555 !important;
+}
+
+body.dark-theme .file-info--done {
+    background-color: #1a2e1a !important;
+    border-color: #22c55e !important;
+}
+
+body.dark-theme .file-info--error {
+    background-color: #2e1a1a !important;
+    border-color: #ef4444 !important;
+}
+
+body.dark-theme .file-info__name {
+    color: #e0e0e0 !important;
+}
+
+body.dark-theme .file-info__remove:hover {
+    background-color: #3a1a1a !important;
+}
+
+body.dark-theme .alert-banner--warning {
+    background-color: rgba(237, 169, 0, 0.2) !important;
+    border-color: rgba(237, 169, 0, 0.5) !important;
+    color: #e0e0e0 !important;
+}
+
+/* Iconos específicos en blanco */
+body.dark-theme .info-card__icon.material-symbols-outlined {
+    color: #fff !important;
+}
+
+body.dark-theme .upload-zone__icon-wrapper .material-symbols-outlined {
+    color: #fff !important;
+}
+

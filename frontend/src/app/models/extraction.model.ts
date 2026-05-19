@@ -20,6 +20,13 @@ export interface ColumnaExcel {
   elegida: boolean;
 }
 
+/** Información de una hoja del archivo (respuesta de /api/sheets). */
+export interface SheetInfo {
+  name: string;
+  rowCount: number;
+  isEmpty: boolean;
+}
+
 /** Resultado de validar el ancho de columnas entre hoja origen y hoja destino (respuesta de /api/extract). */
 export interface ValidacionTransferenciaColumnas {
   habilitada: boolean;

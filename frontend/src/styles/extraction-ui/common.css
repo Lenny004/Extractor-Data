@@ -147,3 +147,9 @@
   border: 1px solid rgba(25, 118, 210, 0.28);
   color: var(--tx-body);
 }
+
+.alert-banner--warning {
+  background-color: rgba(237, 169, 0, 0.12);
+  border: 1px solid rgba(237, 169, 0, 0.35);
+  color: #8d6e00;
+}

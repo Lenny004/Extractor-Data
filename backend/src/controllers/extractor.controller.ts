@@ -48,12 +48,19 @@ export const getSheets = (req: Request, res: Response) => {
         if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
             throw new Error('El archivo no tiene hojas');
         }
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-        if (!data || data.length === 0) {
-            throw new Error('El archivo está totalmente vacío');
-        }
-        res.json({ success: true, data: workbook.SheetNames });
+        const sheets = workbook.SheetNames.map((name) => {
+            const sheet = workbook.Sheets[name];
+            const data: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+            const dataRows = data && data.length > 0 && data.some((r) => r.some((c) => c !== ''))
+                ? data
+                : [];
+            return {
+                name,
+                rowCount: dataRows.length,
+                isEmpty: dataRows.length === 0,
+            };
+        });
+        res.json({ success: true, data: sheets });
     } catch (error) {
         res.status(422).json({
             success: false,

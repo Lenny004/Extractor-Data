@@ -12,6 +12,7 @@ import { filter } from 'rxjs/operators';
 
 import { DashboardEventBusService } from '../../core/services/dashboard-event-bus.service';
 import { ExtractionSessionService } from '../../core/services/extraction-session.service';
+import { NotificationService } from '../../core/services/notification.service';
 import type { DashboardEvent, DashboardSectionRoute } from '../../models/dashboard-events.model';
 
 /**
@@ -37,6 +38,7 @@ export class DashboardComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly eventBus = inject(DashboardEventBusService);
   private readonly session = inject(ExtractionSessionService);
+  private readonly notificaciones = inject(NotificationService);
 
   /** URL actual (string simple) para reglas de layout; se actualiza en cada `NavigationEnd`. */
   protected readonly rutaUrl = signal(this.router.url);
@@ -46,9 +48,7 @@ export class DashboardComponent {
    */
   readonly usarContenidoAncho = computed(() => {
     const u = this.rutaUrl();
-    return (
-      u.includes('vista-previa') || u.includes('espacio-trabajo') || u.includes('generador-sql')
-    );
+    return u.includes('vista-previa') || u.includes('generador-sql');
   });
 
   constructor() {
@@ -78,6 +78,14 @@ export class DashboardComponent {
         void this.router.navigate(['columnas']);
         break;
       case 'REQUEST_PREVIEW_FROM_MENU':
+        if (!this.session.tieneArchivoListo()) {
+          this.notificaciones.error('No haz subido ningún archivo');
+          break;
+        }
+        if (this.session.listaColumnas().length === 0) {
+          this.notificaciones.warning('Debes seleccionar columnas primero');
+          break;
+        }
         this.session.intentarAbrirVistaPreviaDesdeMenu().subscribe((ok) => {
           if (ok) void this.router.navigate(['vista-previa']);
         });
@@ -91,7 +99,7 @@ export class DashboardComponent {
 
   /**
    * Navegación solicitada explícitamente (por ejemplo desde breadcrumbs o apartados).
-   * Aquí aplicamos reglas de “limpieza” al volver atrás en el flujo, igual que la app monolítica.
+   * Aquí aplicamos reglas de "limpieza" al volver atrás en el flujo, igual que la app monolítica.
    */
   private async navegarConReglas(destino: DashboardSectionRoute): Promise<void> {
     switch (destino) {
@@ -107,9 +115,6 @@ export class DashboardComponent {
         break;
       case 'vista-previa':
         await this.router.navigate(['vista-previa']);
-        break;
-      case 'espacio-trabajo':
-        await this.router.navigate(['espacio-trabajo']);
         break;
       case 'generador-sql':
         await this.router.navigate(['generador-sql']);
@@ -130,7 +135,7 @@ export class DashboardComponent {
   }
 
   /**
-   * Click en el ítem “Subir” del sidenav.
+   * Click en el ítem "Subir" del sidenav.
    * Usamos el bus para mantener el mismo patrón que el resto de apartados (EDA consistente).
    */
   alPulsarSubirEnMenu(evento: MouseEvent): void {

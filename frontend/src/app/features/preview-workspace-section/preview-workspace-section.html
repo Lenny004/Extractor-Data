@@ -19,7 +19,7 @@
       <div>
         <h1 class="card-header__title">Datos extraídos</h1>
         <p class="card-header__description">
-          Hoja <strong>{{ session.nombreHojaEnResultado() }}</strong> ·
+          <strong>{{ session.nombreHojaFormateado() }}</strong> ·
           @if (session.filasTabla().length > 0) {
             Mostrando filas
             {{ (session.paginaVistaPrevia() - 1) * session.tamanoPaginaVistaPrevia() + 1 }}–{{

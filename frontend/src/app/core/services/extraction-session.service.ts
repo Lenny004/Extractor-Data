@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Observable, catchError, map, of, take } from 'rxjs';
 
-import type { ColumnaExcel, EstadoSubida, ValidacionTransferenciaColumnas } from '../../models/extraction.model';
+import type { ColumnaExcel, EstadoSubida, SheetInfo, ValidacionTransferenciaColumnas } from '../../models/extraction.model';
 
 /**
  * URL del backend. En producción convendría leerla de `environment.ts`.
@@ -38,6 +38,8 @@ export class ExtractionSessionService {
   readonly idArchivoEnServidor = signal('');
   readonly filaEncabezados = signal(1);
   readonly hojasDisponibles = signal<string[]>([]);
+  readonly hojasInfo = signal<SheetInfo[]>([]);
+  readonly hojasVacias = computed(() => this.hojasInfo().filter((h) => h.isEmpty).map((h) => h.name));
   readonly hojaSeleccionada = signal('');
   /** Hoja con la que se compara el ancho de columnas antes de extraer (opcional). */
   readonly hojaDestinoValidacion = signal('');
@@ -122,6 +124,15 @@ export class ExtractionSessionService {
   readonly esperandoRespuestaTabla = signal(false);
   readonly mensajeErrorTabla = signal('');
   readonly nombreHojaEnResultado = signal('');
+
+  readonly nombreHojaFormateado = computed(() => {
+    const raw = this.nombreHojaEnResultado();
+    const match = raw.match(/^(Hoja|Sheet|Blad|Feuille|Foglio)\s*(\d+)$/i);
+    if (match) {
+      return `Hoja ${match[2]}`;
+    }
+    return raw;
+  });
   readonly titulosTabla = signal<string[]>([]);
   readonly filasTabla = signal<string[][]>([]);
   readonly resultadoTruncado = signal(false);
@@ -251,6 +262,7 @@ export class ExtractionSessionService {
     this.mensajeError.set('');
     this.idArchivoEnServidor.set('');
     this.hojasDisponibles.set([]);
+    this.hojasInfo.set([]);
     this.hojaSeleccionada.set('');
     this.hojaDestinoValidacion.set('');
     this.limpiarDatosTabla();
@@ -264,15 +276,17 @@ export class ExtractionSessionService {
 
   private pedirHojasAlServidor(filename: string): void {
     this.http
-      .get<{ success: boolean; data: string[]; message?: string }>(
+      .get<{ success: boolean; data: SheetInfo[]; message?: string }>(
         `${URL_SERVIDOR}/api/sheets/${filename}`,
       )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
           if (res.success && res.data && res.data.length > 0) {
-            this.hojasDisponibles.set(res.data);
-            this.hojaSeleccionada.set(res.data[0]);
+            this.hojasInfo.set(res.data);
+            this.hojasDisponibles.set(res.data.map((h) => h.name));
+            const firstNonEmpty = res.data.find((h) => !h.isEmpty);
+            this.hojaSeleccionada.set(firstNonEmpty ? firstNonEmpty.name : res.data[0].name);
           } else {
             this.estadoSubida.set('error');
             this.mensajeError.set('No se encontraron hojas en el archivo.');
