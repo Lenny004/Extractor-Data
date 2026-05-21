@@ -64,7 +64,7 @@ export const getSheets = (req: Request, res: Response) => {
     } catch (error) {
         res.status(422).json({
             success: false,
-            message: 'El archivo está corrupto, vacío o no tiene un formato tabular válido.',
+            message: 'El archivo está corrupto, vacío, restringido o no tiene un formato tabular válido.',
         });
     }
 };
