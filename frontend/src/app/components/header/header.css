@@ -97,3 +97,15 @@
     display: flex;
   }
 }
+
+.modo-oscuro-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+

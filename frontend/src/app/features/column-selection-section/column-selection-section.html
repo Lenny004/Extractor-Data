@@ -11,6 +11,12 @@
       <span class="breadcrumb__current">Seleccionar Columnas</span>
     </nav>
 
+    <app-sheet-tabs
+      [sheets]="session.hojasActivas()"
+      [activeSheet]="session.activeSheetName()"
+      (sheetChange)="cambiarHoja($event)"
+    />
+
     @if (session.mensajeErrorTabla()) {
       <div class="alert-banner alert-banner--error" role="alert">
         <span class="material-symbols-outlined">error</span>
@@ -24,6 +30,7 @@
         <p class="card-header__description">
           Revisa las columnas detectadas de
           <strong>"{{ session.nombreArchivo() }}"</strong>
+          — hoja <strong>{{ session.activeSheetName() }}</strong>
           y selecciona las que deseas exportar.
         </p>
       </div>

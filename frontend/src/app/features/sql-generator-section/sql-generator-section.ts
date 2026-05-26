@@ -10,13 +10,14 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
+import { SheetTabsComponent } from '../../components/sheet-tabs/sheet-tabs';
 import { DashboardEventBusService } from '../../core/services/dashboard-event-bus.service';
 import { ExtractionSessionService } from '../../core/services/extraction-session.service';
 
 @Component({
   standalone: true,
   selector: 'app-sql-generator-section',
-  imports: [RouterLink],
+  imports: [RouterLink, SheetTabsComponent],
   templateUrl: './sql-generator-section.html',
   styleUrl: './sql-generator-section.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,11 +32,11 @@ export class SqlGeneratorSectionComponent {
   readonly incluirCreate = signal(true);
   readonly vacioComoNull = signal(false);
 
-  readonly sqlSalida = signal('');
-  readonly sqlGenerating = signal(false);
+  readonly _sqlSalida = signal('');
+  readonly _sqlGenerating = signal(false);
   readonly sqlCopied = signal(false);
-  readonly error = signal('');
-  readonly meta = signal<{
+  readonly _error = signal('');
+  readonly _sqlMeta = signal<{
     truncated: boolean;
     totalRowsInFile: number;
     rowCountInScript: number;
@@ -51,10 +52,10 @@ export class SqlGeneratorSectionComponent {
       this.nombreTabla().trim().length > 0,
   );
 
-  readonly sqlGenerated = computed(() => this.meta() !== null);
+  readonly sqlGenerated = computed(() => this._sqlMeta() !== null);
 
   readonly sqlLines = computed(() => {
-    const sql = this.sqlSalida();
+    const sql = this._sqlSalida();
     if (!sql) return [];
     const allLines = sql.split('\n');
     const capped = allLines.length > this.previewMaxLines;
@@ -75,41 +76,95 @@ export class SqlGeneratorSectionComponent {
 
   constructor() {
     afterNextRender(() => {
-      const archivo = this.session.nombreArchivo();
-      const tabla = this.nombreTabla().trim();
-      if (!tabla) {
-        this.nombreTabla.set(archivo ? this.deriveTableName(archivo) : 'datos_extraidos');
-      }
+      this.cargarDefaults();
     });
+  }
+
+  private cargarDefaults(): void {
+    this.sincronizarConWorkflow();
+    if (!this.nombreTabla()) {
+      const archivo = this.session.nombreArchivo();
+      if (archivo) {
+        const wf = this.session.activeWorkflow();
+        const base = this.deriveTableName(archivo);
+        const sheetSuffix = wf ? `_${wf.sheetName.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase()}` : '';
+        this.nombreTabla.set(`${base}${sheetSuffix}`);
+      } else {
+        this.nombreTabla.set('datos_extraidos');
+      }
+    }
+  }
+
+  private sincronizarConWorkflow(): void {
+    const wf = this.session.activeWorkflow();
+    if (!wf) return;
+    this.nombreTabla.set(wf.tableName);
+    this.dialecto.set(wf.dialect);
+    this.incluirCreate.set(wf.includeCreateTable);
+    this.vacioComoNull.set(wf.emptyStringAsNull);
+    this._sqlSalida.set(wf.sqlOutput);
+    this._sqlMeta.set(wf.sqlMeta);
+    this._sqlGenerating.set(wf.sqlGenerating);
+    this._error.set(wf.sqlError);
+  }
+
+  private escribirAWorkflow(patch: Record<string, unknown>): void {
+    const wf = this.session.activeWorkflow();
+    if (!wf) return;
+    this.session.patchWorkflow(wf.sheetName, patch as any);
+  }
+
+  cambiarHoja(name: string): void {
+    const current = this.session.activeSheetName();
+    if (name === current) return;
+    this.session.activarHoja(name);
+    this.sincronizarConWorkflow();
+    this.sqlCopied.set(false);
   }
 
   alCambiarNombreTabla(valor: string): void {
     this.nombreTabla.set(valor);
+    this.escribirAWorkflow({ tableName: valor });
   }
 
   alCambiarDialecto(valor: string): void {
-    this.dialecto.set(valor === 'postgresql' ? 'postgresql' : 'mysql');
+    const d = valor === 'postgresql' ? 'postgresql' : 'mysql';
+    this.dialecto.set(d);
+    this.escribirAWorkflow({ dialect: d });
   }
 
   alternarIncluirCreate(): void {
-    this.incluirCreate.update((v) => !v);
+    const v = !this.incluirCreate();
+    this.incluirCreate.set(v);
+    this.escribirAWorkflow({ includeCreateTable: v });
   }
 
   alternarVacioComoNull(): void {
-    this.vacioComoNull.update((v) => !v);
+    const v = !this.vacioComoNull();
+    this.vacioComoNull.set(v);
+    this.escribirAWorkflow({ emptyStringAsNull: v });
   }
 
   generar(): void {
-    this.error.set('');
-    this.meta.set(null);
+    this._error.set('');
+    this._sqlMeta.set(null);
     if (!this.puedeGenerar()) {
-      this.error.set('Completa el nombre de la tabla y selecciona al menos una columna.');
+      this._error.set('Completa el nombre de la tabla y selecciona al menos una columna.');
       return;
     }
 
-    this.sqlGenerating.set(true);
+    this._sqlGenerating.set(true);
+    this.escribirAWorkflow({ sqlGenerating: true });
+
+    const wf = this.session.activeWorkflow();
+    if (!wf) {
+      this._error.set('No hay una hoja activa.');
+      this._sqlGenerating.set(false);
+      return;
+    }
+
     this.session
-      .solicitarGeneracionSql({
+      .solicitarGeneracionSqlDeHoja(wf.sheetName, {
         tableName: this.nombreTabla().trim(),
         dialect: this.dialecto(),
         includeCreateTable: this.incluirCreate(),
@@ -118,25 +173,25 @@ export class SqlGeneratorSectionComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
-          this.sqlGenerating.set(false);
+          this._sqlGenerating.set(false);
           if (res.ok) {
-            this.sqlSalida.set(res.data.sql);
-            this.meta.set({
+            this._sqlSalida.set(res.data.sql);
+            this._sqlMeta.set({
               truncated: res.data.truncated,
               totalRowsInFile: res.data.totalRowsInFile,
               rowCountInScript: res.data.rowCountInScript,
               sheetName: res.data.sheetName,
             });
           } else {
-            this.sqlSalida.set('');
-            this.error.set(res.message);
+            this._sqlSalida.set('');
+            this._error.set(res.message);
           }
         },
       });
   }
 
   copiarSql(): void {
-    const texto = this.sqlSalida();
+    const texto = this._sqlSalida();
     if (!texto) return;
     void navigator.clipboard.writeText(texto).then(() => {
       this.sqlCopied.set(true);
@@ -145,7 +200,7 @@ export class SqlGeneratorSectionComponent {
   }
 
   descargarSql(): void {
-    const texto = this.sqlSalida();
+    const texto = this._sqlSalida();
     if (!texto) return;
     const nombreBase = this.nombreTabla().trim().replace(/[^\w.-]+/g, '_') || 'output';
     const blob = new Blob([texto], { type: 'text/sql' });

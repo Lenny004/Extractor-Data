@@ -3,32 +3,24 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Observable, catchError, map, of, take } from 'rxjs';
 
-import type { ColumnaExcel, EstadoSubida, ValidacionTransferenciaColumnas } from '../../models/extraction.model';
+import type {
+  ColumnaExcel,
+  EstadoSubida,
+  SheetInfo,
+  SheetWorkflow,
+  ValidacionTransferenciaColumnas,
+} from '../../models/extraction.model';
 
-/**
- * URL del backend. En producción convendría leerla de `environment.ts`.
- * Se mantiene constante explícita para que un junior vea claramente el acoplamiento con el servidor.
- */
 const URL_SERVIDOR = 'http://localhost:3000';
 
-/**
- * Servicio de sesión de extracción: fuente única de verdad del flujo (archivo, columnas, tabla).
- *
- * Por qué no va en componentes: evita duplicar HTTP y estado al partir la UI en apartados lazy.
- * Los apartados leen señales y llaman métodos de este servicio o, preferiblemente, emiten eventos al bus
- * para que el Dashboard orqueste navegación + efectos (según la arquitectura EDA pedida).
- *
- * Buenas prácticas:
- * - `signal` + `computed` para reactividad clara con OnPush en componentes hijos.
- * - Validación temprana de archivos (tamaño y extensión) con mensajes explícitos.
- * - Errores de red diferenciados (status 0 vs otros).
- */
 @Injectable({ providedIn: 'root' })
 export class ExtractionSessionService {
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
 
-  // ----- Subida -----
+  // =========================================================================
+  // Upload-level state (shared across all sheets)
+  // =========================================================================
   readonly estadoSubida = signal<EstadoSubida>('idle');
   readonly porcentajeBarra = signal(0);
   readonly nombreArchivo = signal('');
@@ -38,9 +30,10 @@ export class ExtractionSessionService {
   readonly idArchivoEnServidor = signal('');
   readonly filaEncabezados = signal(1);
   readonly hojasDisponibles = signal<string[]>([]);
-  readonly hojaSeleccionada = signal('');
-  /** Hoja con la que se compara el ancho de columnas antes de extraer (opcional). */
-  readonly hojaDestinoValidacion = signal('');
+  readonly hojasInfo = signal<SheetInfo[]>([]);
+  readonly hojasVacias = computed(() =>
+    this.hojasInfo().filter((h) => h.isEmpty).map((h) => h.name),
+  );
 
   readonly textoBarraProgreso = computed(() => {
     const e = this.estadoSubida();
@@ -62,13 +55,28 @@ export class ExtractionSessionService {
 
   readonly debeMostrarBarraProgreso = computed(() => this.estadoSubida() !== 'idle');
 
-  // ----- Columnas -----
-  readonly listaColumnas = signal<ColumnaExcel[]>([]);
-  readonly textoBuscarColumnas = signal('');
-  readonly paginaListaColumnas = signal(1);
-  readonly nombreHojaCalculo = signal('');
-  readonly filasDeDatosEnArchivo = signal(0);
-  readonly cargandoListaColumnas = signal(false);
+  // =========================================================================
+  // Multi-sheet workflow state
+  // =========================================================================
+  private readonly workflowsMap = signal<Record<string, SheetWorkflow>>({});
+
+  readonly workflows = computed(() => this.workflowsMap());
+  readonly hojasActivas = computed(() => Object.keys(this.workflowsMap()));
+  readonly activeSheetName = signal('');
+  readonly activeWorkflow = computed(() => {
+    const name = this.activeSheetName();
+    return this.workflowsMap()[name] ?? null;
+  });
+
+  // =========================================================================
+  // Backward-compatible proxy signals (delegate to activeWorkflow)
+  // =========================================================================
+  readonly listaColumnas = computed(() => this.activeWorkflow()?.columns ?? []);
+  readonly textoBuscarColumnas = computed(() => this.activeWorkflow()?.columnSearchText ?? '');
+  readonly paginaListaColumnas = computed(() => this.activeWorkflow()?.columnPage ?? 1);
+  readonly nombreHojaCalculo = computed(() => this.activeWorkflow()?.sheetName ?? '');
+  readonly filasDeDatosEnArchivo = computed(() => this.activeWorkflow()?.totalRowsInFile ?? 0);
+  readonly cargandoListaColumnas = computed(() => this.activeWorkflow()?.loadingColumns ?? false);
   readonly columnasPorPaginaEnPantalla = 5;
 
   readonly posicionesColumnasElegidas = computed(() =>
@@ -118,18 +126,37 @@ export class ExtractionSessionService {
     return paginas;
   });
 
-  // ----- Tabla / vista previa -----
-  readonly esperandoRespuestaTabla = signal(false);
-  readonly mensajeErrorTabla = signal('');
-  readonly nombreHojaEnResultado = signal('');
-  readonly titulosTabla = signal<string[]>([]);
-  readonly filasTabla = signal<string[][]>([]);
-  readonly resultadoTruncado = signal(false);
-  readonly totalFilasQueHayEnExcel = signal(0);
-  readonly ultimaValidacionTransferencia = signal<ValidacionTransferenciaColumnas | null>(null);
+  // ----- Preview / extraction proxy signals -----
+  readonly esperandoRespuestaTabla = computed(
+    () => this.activeWorkflow()?.previewLoading ?? false,
+  );
+  readonly mensajeErrorTabla = computed(() => this.activeWorkflow()?.previewError ?? '');
+  readonly nombreHojaEnResultado = computed(() => this.activeWorkflow()?.sheetName ?? '');
 
-  readonly tamanoPaginaVistaPrevia = signal<10 | 15 | 20>(10);
-  readonly paginaVistaPrevia = signal(1);
+  readonly nombreHojaFormateado = computed(() => {
+    const raw = this.nombreHojaEnResultado();
+    const match = raw.match(/^(Hoja|Sheet|Blad|Feuille|Foglio)\s*(\d+)$/i);
+    if (match) {
+      return `Hoja ${match[2]}`;
+    }
+    return raw;
+  });
+
+  readonly titulosTabla = computed(() => this.activeWorkflow()?.previewHeaders ?? []);
+  readonly filasTabla = computed(() => this.activeWorkflow()?.previewRows ?? []);
+  readonly resultadoTruncado = computed(() => this.activeWorkflow()?.previewTruncated ?? false);
+  readonly totalFilasQueHayEnExcel = computed(
+    () => this.activeWorkflow()?.previewTotalRowsInFile ?? 0,
+  );
+  readonly ultimaValidacionTransferencia = computed(
+    () => this.activeWorkflow()?.columnTransferValidation ?? null,
+  );
+
+  readonly tamanoPaginaVistaPrevia = computed(
+    () => this.activeWorkflow()?.previewPageSize ?? 10,
+  );
+
+  readonly paginaVistaPrevia = computed(() => this.activeWorkflow()?.previewPage ?? 1);
 
   readonly totalPaginasVistaPrevia = computed(() => {
     const totalFilas = this.filasTabla().length;
@@ -163,7 +190,6 @@ export class ExtractionSessionService {
     return paginas;
   });
 
-  /** JSON derivado para copiar al portapapeles (misma semántica que la implementación monolítica). */
   readonly jsonVista = computed(() => {
     const encabezados = this.titulosTabla();
     const filas = this.filasTabla();
@@ -179,17 +205,86 @@ export class ExtractionSessionService {
     return JSON.stringify(arregloObjetos, null, 2);
   });
 
-  /**
-   * Indica si ya hay un archivo subido listo para continuar el flujo.
-   * Útil para guards y para habilitar botones sin acoplar componentes entre sí.
-   */
+  // ----- Cross-sheet validation -----
+  readonly hojaDestinoValidacion = computed(
+    () => this.activeWorkflow()?.targetSheetName ?? '',
+  );
+
+  // =========================================================================
+  // Workflow lifecycle
+  // =========================================================================
+
+  private crearWorkflowVacio(info: SheetInfo): SheetWorkflow {
+    return {
+      sheetName: info.name,
+      isEmpty: info.isEmpty,
+      columns: [],
+      columnSearchText: '',
+      columnPage: 1,
+      loadingColumns: false,
+      totalRowsInFile: 0,
+      previewHeaders: [],
+      previewRows: [],
+      previewTruncated: false,
+      previewTotalRowsInFile: 0,
+      previewLoading: false,
+      previewError: '',
+      previewPageSize: 10,
+      previewPage: 1,
+      columnTransferValidation: null,
+      targetSheetName: '',
+      sqlOutput: '',
+      sqlMeta: null,
+      sqlGenerating: false,
+      sqlError: '',
+      tableName: '',
+      dialect: 'postgresql',
+      includeCreateTable: true,
+      emptyStringAsNull: false,
+    };
+  }
+
+  patchWorkflow(sheetName: string, patch: Partial<SheetWorkflow>): void {
+    this.workflowsMap.update((wfs) => {
+      const existing = wfs[sheetName];
+      if (!existing) return wfs;
+      return { ...wfs, [sheetName]: { ...existing, ...patch } };
+    });
+  }
+
+  inicializarWorkflow(info: SheetInfo): void {
+    this.workflowsMap.update((wfs) => {
+      if (wfs[info.name]) return wfs;
+      return { ...wfs, [info.name]: this.crearWorkflowVacio(info) };
+    });
+  }
+
+  eliminarWorkflow(name: string): void {
+    this.workflowsMap.update((wfs) => {
+      const next = { ...wfs };
+      delete next[name];
+      return next;
+    });
+    if (this.activeSheetName() === name) {
+      const rest = this.hojasActivas();
+      this.activeSheetName.set(rest.length > 0 ? rest[0] : '');
+    }
+  }
+
+  activarHoja(name: string): void {
+    if (this.workflowsMap()[name]) {
+      this.activeSheetName.set(name);
+    }
+  }
+
+  // =========================================================================
+  // Upload-level methods (unchanged)
+  // =========================================================================
+
   tieneArchivoListo(): boolean {
     return this.estadoSubida() === 'done' && Boolean(this.idArchivoEnServidor());
   }
 
-  /**
-   * Devuelve el icono Material asociado al tipo de columna (presentación pura).
-   */
   iconoTipoColumna(tipo: string): string {
     const mapa: Record<string, string> = {
       number: 'tag',
@@ -230,17 +325,12 @@ export class ExtractionSessionService {
     this.filaEncabezados.set(Math.max(1, valor));
   }
 
-  cuandoCambiaHoja(evento: Event): void {
-    const select = evento.target as HTMLSelectElement;
-    this.hojaSeleccionada.set(select.value);
-    if (this.hojaDestinoValidacion() === select.value) {
-      this.hojaDestinoValidacion.set('');
-    }
-  }
-
   cuandoCambiaHojaDestinoValidacion(evento: Event): void {
     const select = evento.target as HTMLSelectElement;
-    this.hojaDestinoValidacion.set(select.value);
+    const wf = this.activeWorkflow();
+    if (wf) {
+      this.patchWorkflow(wf.sheetName, { targetSheetName: select.value });
+    }
   }
 
   quitarArchivoYEmpezarDeNuevo(): void {
@@ -251,9 +341,10 @@ export class ExtractionSessionService {
     this.mensajeError.set('');
     this.idArchivoEnServidor.set('');
     this.hojasDisponibles.set([]);
-    this.hojaSeleccionada.set('');
-    this.hojaDestinoValidacion.set('');
-    this.limpiarDatosTabla();
+    this.hojasInfo.set([]);
+    this.hojasVacias();
+    this.activeSheetName.set('');
+    this.workflowsMap.set({});
   }
 
   private formatearTamano(bytes: number): string {
@@ -264,15 +355,15 @@ export class ExtractionSessionService {
 
   private pedirHojasAlServidor(filename: string): void {
     this.http
-      .get<{ success: boolean; data: string[]; message?: string }>(
+      .get<{ success: boolean; data: SheetInfo[]; message?: string }>(
         `${URL_SERVIDOR}/api/sheets/${filename}`,
       )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
           if (res.success && res.data && res.data.length > 0) {
-            this.hojasDisponibles.set(res.data);
-            this.hojaSeleccionada.set(res.data[0]);
+            this.hojasInfo.set(res.data);
+            this.hojasDisponibles.set(res.data.map((h) => h.name));
           } else {
             this.estadoSubida.set('error');
             this.mensajeError.set('No se encontraron hojas en el archivo.');
@@ -285,9 +376,6 @@ export class ExtractionSessionService {
       });
   }
 
-  /**
-   * Valida y sube el archivo. Mantiene la misma lógica que el componente raíz anterior.
-   */
   procesarArchivoSubida(archivo: File): void {
     const extension = archivo.name.split('.').pop()?.toLowerCase() ?? '';
     if (!['xlsx', 'xls', 'csv', 'dat'].includes(extension)) {
@@ -356,41 +444,80 @@ export class ExtractionSessionService {
       });
   }
 
-  /**
-   * Limpia selección de columnas y resultados, típico al volver a "Subir".
-   */
-  reiniciarApartadoColumnasYPrevia(): void {
-    this.listaColumnas.set([]);
-    this.textoBuscarColumnas.set('');
-    this.paginaListaColumnas.set(1);
-    this.limpiarDatosTabla();
+  // =========================================================================
+  // Per-sheet column loading
+  // =========================================================================
+
+  pedirColumnasDeHoja(sheetName: string): void {
+    const filename = this.idArchivoEnServidor();
+    if (!filename) return;
+
+    this.patchWorkflow(sheetName, { loadingColumns: true });
+
+    const url = `${URL_SERVIDOR}/api/columns/${filename}?headerRow=${this.filaEncabezados()}&sheetName=${encodeURIComponent(sheetName)}`;
+
+    this.http
+      .get<{
+        success: boolean;
+        data: {
+          sheetName: string;
+          totalRows: number;
+          columns: { index: number; name: string; type: string; sampleData: string }[];
+        };
+      }>(url)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (respuesta) => {
+          if (respuesta.success) {
+            const mapeadas: ColumnaExcel[] = respuesta.data.columns.map((c) => ({
+              posicion: c.index,
+              titulo: c.name,
+              tipo: c.type,
+              ejemploCelda: c.sampleData,
+              elegida: true,
+            }));
+            this.patchWorkflow(sheetName, {
+              columns: mapeadas,
+              totalRowsInFile: respuesta.data.totalRows,
+              loadingColumns: false,
+            });
+          } else {
+            this.patchWorkflow(sheetName, { loadingColumns: false });
+          }
+        },
+        error: (err: { error?: { message?: string } }) => {
+          this.patchWorkflow(sheetName, {
+            loadingColumns: false,
+            previewError: err?.error?.message || 'Error al procesar las columnas.',
+          });
+        },
+      });
   }
 
-  /**
-   * Arranca la carga de metadatos de columnas (antes de mostrar el apartado correspondiente).
-   */
+  /** Loads columns for the currently active sheet (backward compat). */
   iniciarSeleccionDeColumnas(): void {
-    this.pedirListaColumnasAlServidor();
+    const wf = this.activeWorkflow();
+    if (wf) {
+      this.pedirColumnasDeHoja(wf.sheetName);
+    }
   }
 
-  volverDesdePreviaAColumnas(): void {
-    this.limpiarDatosTabla();
-  }
+  // =========================================================================
+  // Per-sheet extraction / preview
+  // =========================================================================
 
-  /**
-   * Solicita al servidor la tabla extraída.
-   * @returns Observable que emite `true` solo si la respuesta fue exitosa y trajo datos.
-   * Así el Dashboard o los apartados pueden navegar en el `subscribe` sin acoplarse entre sí.
-   */
-  pedirTablaAlServidor(): Observable<boolean> {
-    const columnasQueQuiero = this.posicionesColumnasElegidas();
+  pedirTablaDeHoja(sheetName: string): Observable<boolean> {
+    const wf = this.workflowsMap()[sheetName];
+    if (!wf) return of(false);
+
+    const columnasQueQuiero = wf.columns
+      .filter((c) => c.elegida)
+      .map((c) => c.posicion);
     if (columnasQueQuiero.length === 0) return of(false);
 
-    this.esperandoRespuestaTabla.set(true);
-    this.mensajeErrorTabla.set('');
-    this.ultimaValidacionTransferencia.set(null);
+    this.patchWorkflow(sheetName, { previewLoading: true, previewError: '' });
 
-    const destino = this.hojaDestinoValidacion().trim();
+    const destino = wf.targetSheetName.trim();
     const cuerpo: {
       filename: string;
       headerRow: number;
@@ -401,7 +528,7 @@ export class ExtractionSessionService {
       filename: this.idArchivoEnServidor(),
       headerRow: this.filaEncabezados(),
       columnIndices: columnasQueQuiero,
-      sheetName: this.hojaSeleccionada(),
+      sheetName,
     };
     if (destino) {
       cuerpo['targetSheetName'] = destino;
@@ -430,88 +557,100 @@ export class ExtractionSessionService {
       .pipe(
         take(1),
         map((respuesta) => {
-          this.esperandoRespuestaTabla.set(false);
           if (respuesta.success && respuesta.data) {
-            this.nombreHojaEnResultado.set(respuesta.data.sheetName);
-            this.titulosTabla.set(respuesta.data.headers);
-            this.filasTabla.set(respuesta.data.rows);
-            this.resultadoTruncado.set(respuesta.data.truncated);
-            this.totalFilasQueHayEnExcel.set(respuesta.data.totalRowsInFile);
-            const v = respuesta.data.columnTransferValidation;
-            if (v?.enabled) {
-              this.ultimaValidacionTransferencia.set({
-                habilitada: true,
-                hojaDestino: v.targetSheetName,
-                columnasOrigen: v.sourceColumnCount,
-                columnasDestino: v.destinationColumnCount,
-                encabezadosTransferidos: v.transferredHeaders,
-                encabezadosOmitidos: v.omittedHeaders,
-              });
-            } else {
-              this.ultimaValidacionTransferencia.set(null);
-            }
-            this.paginaVistaPrevia.set(1);
+            const d = respuesta.data;
+            const colVal = d.columnTransferValidation
+              ? {
+                  habilitada: d.columnTransferValidation.enabled,
+                  hojaDestino: d.columnTransferValidation.targetSheetName,
+                  columnasOrigen: d.columnTransferValidation.sourceColumnCount,
+                  columnasDestino: d.columnTransferValidation.destinationColumnCount,
+                  encabezadosTransferidos: d.columnTransferValidation.transferredHeaders,
+                  encabezadosOmitidos: d.columnTransferValidation.omittedHeaders,
+                }
+              : null;
+
+            this.patchWorkflow(sheetName, {
+              previewLoading: false,
+              previewHeaders: d.headers,
+              previewRows: d.rows,
+              previewTruncated: d.truncated,
+              previewTotalRowsInFile: d.totalRowsInFile,
+              columnTransferValidation: colVal,
+              previewPage: 1,
+            });
             return true;
           }
-          this.mensajeErrorTabla.set(respuesta.message || 'No se pudo extraer los datos');
+          this.patchWorkflow(sheetName, {
+            previewLoading: false,
+            previewError: respuesta.message || 'No se pudo extraer los datos',
+          });
           return false;
         }),
         catchError((err: { error?: { message?: string }; status?: number }) => {
-          this.esperandoRespuestaTabla.set(false);
           const delServidor = err?.error?.message;
           const codigo = err?.status != null ? err.status : '';
           const sinRed = err?.status === 0;
-          this.mensajeErrorTabla.set(
-            delServidor ||
+          this.patchWorkflow(sheetName, {
+            previewLoading: false,
+            previewError:
+              delServidor ||
               (sinRed
                 ? 'No hubo respuesta del servidor. ¿Está encendido el backend en el puerto 3000?'
                 : `Fallo al pedir la tabla${codigo !== '' ? ` (HTTP ${codigo})` : ''}. Verifica los datos del archivo.`),
-          );
+          });
           return of(false);
         }),
       );
   }
 
-  /**
-   * Lógica del menú lateral: devuelve un observable vacío si no hay contexto suficiente.
-   */
-  intentarAbrirVistaPreviaDesdeMenu(): Observable<boolean> {
-    if (!this.idArchivoEnServidor() || this.listaColumnas().length === 0) return of(false);
-    return this.pedirTablaAlServidor();
+  /** Extracts for the active sheet (backward compat). */
+  pedirTablaAlServidor(): Observable<boolean> {
+    const wf = this.activeWorkflow();
+    if (!wf) return of(false);
+    return this.pedirTablaDeHoja(wf.sheetName);
   }
 
-  /**
-   * Genera un script SQL (CREATE opcional + INSERTs) con la misma selección de columnas que la extracción.
-   */
-  solicitarGeneracionSql(opciones: {
-    tableName: string;
-    dialect: 'mysql' | 'postgresql';
-    includeCreateTable: boolean;
-    emptyStringAsNull: boolean;
-  }): Observable<
-    | {
-        ok: true;
-        data: {
-          sql: string;
-          truncated: boolean;
-          totalRowsInFile: number;
-          rowCountInScript: number;
-          sheetName: string;
-        };
-      }
+  intentarAbrirVistaPreviaDesdeMenu(): Observable<boolean> {
+    const wf = this.activeWorkflow();
+    if (!wf || !this.idArchivoEnServidor()) return of(false);
+    return this.pedirTablaDeHoja(wf.sheetName);
+  }
+
+  // =========================================================================
+  // Per-sheet SQL generation
+  // =========================================================================
+
+  solicitarGeneracionSqlDeHoja(
+    sheetName: string,
+    opciones: {
+      tableName: string;
+      dialect: 'mysql' | 'postgresql';
+      includeCreateTable: boolean;
+      emptyStringAsNull: boolean;
+    },
+  ): Observable<
+    | { ok: true; data: { sql: string; truncated: boolean; totalRowsInFile: number; rowCountInScript: number; sheetName: string } }
     | { ok: false; message: string }
   > {
-    const columnasQueQuiero = this.posicionesColumnasElegidas();
+    const wf = this.workflowsMap()[sheetName];
+    if (!wf) {
+      return of({ ok: false, message: 'Hoja no encontrada en el flujo de trabajo.' });
+    }
+
+    const columnasQueQuiero = wf.columns
+      .filter((c) => c.elegida)
+      .map((c) => c.posicion);
     if (columnasQueQuiero.length === 0) {
       return of({ ok: false, message: 'Selecciona al menos una columna antes de generar SQL.' });
     }
 
-    const destino = this.hojaDestinoValidacion().trim();
+    const destino = wf.targetSheetName.trim();
     const cuerpo: Record<string, unknown> = {
       filename: this.idArchivoEnServidor(),
       headerRow: this.filaEncabezados(),
       columnIndices: columnasQueQuiero,
-      sheetName: this.hojaSeleccionada(),
+      sheetName,
       tableName: opciones.tableName.trim(),
       dialect: opciones.dialect,
       includeCreateTable: opciones.includeCreateTable,
@@ -538,6 +677,17 @@ export class ExtractionSessionService {
         map((respuesta) => {
           if (respuesta.success && respuesta.data?.sql != null) {
             const d = respuesta.data;
+            this.patchWorkflow(sheetName, {
+              sqlOutput: d.sql,
+              sqlMeta: {
+                truncated: d.truncated,
+                totalRowsInFile: d.totalRowsInFile,
+                rowCountInScript: d.rowCountInScript,
+                sheetName: d.sheetName,
+              },
+              sqlGenerating: false,
+              sqlError: '',
+            });
             return {
               ok: true as const,
               data: {
@@ -549,11 +699,15 @@ export class ExtractionSessionService {
               },
             };
           }
-          return { ok: false as const, message: respuesta.message || 'No se pudo generar el SQL' };
+          return {
+            ok: false as const,
+            message: respuesta.message || 'No se pudo generar el SQL',
+          };
         }),
         catchError((err: { error?: { message?: string }; status?: number }) => {
           const delServidor = err?.error?.message;
           const sinRed = err?.status === 0;
+          this.patchWorkflow(sheetName, { sqlGenerating: false });
           return of({
             ok: false as const,
             message:
@@ -566,106 +720,140 @@ export class ExtractionSessionService {
       );
   }
 
-  private limpiarDatosTabla(): void {
-    this.esperandoRespuestaTabla.set(false);
-    this.mensajeErrorTabla.set('');
-    this.nombreHojaEnResultado.set('');
-    this.titulosTabla.set([]);
-    this.filasTabla.set([]);
-    this.resultadoTruncado.set(false);
-    this.totalFilasQueHayEnExcel.set(0);
-    this.ultimaValidacionTransferencia.set(null);
-    this.paginaVistaPrevia.set(1);
+  solicitarGeneracionSql(opciones: {
+    tableName: string;
+    dialect: 'mysql' | 'postgresql';
+    includeCreateTable: boolean;
+    emptyStringAsNull: boolean;
+  }): Observable<
+    | { ok: true; data: { sql: string; truncated: boolean; totalRowsInFile: number; rowCountInScript: number; sheetName: string } }
+    | { ok: false; message: string }
+  > {
+    const wf = this.activeWorkflow();
+    if (!wf) {
+      return of({ ok: false, message: 'No hay una hoja activa.' });
+    }
+    return this.solicitarGeneracionSqlDeHoja(wf.sheetName, opciones);
   }
 
-  private pedirListaColumnasAlServidor(): void {
-    this.cargandoListaColumnas.set(true);
-    const url = `${URL_SERVIDOR}/api/columns/${this.idArchivoEnServidor()}?headerRow=${this.filaEncabezados()}&sheetName=${encodeURIComponent(this.hojaSeleccionada())}`;
+  // =========================================================================
+  // Column selection actions (operate on active workflow)
+  // =========================================================================
 
-    this.http
-      .get<{
-        success: boolean;
-        data: {
-          sheetName: string;
-          totalRows: number;
-          columns: { index: number; name: string; type: string; sampleData: string }[];
-        };
-      }>(url)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (respuesta) => {
-          if (respuesta.success) {
-            const mapeadas: ColumnaExcel[] = respuesta.data.columns.map((c) => ({
-              posicion: c.index,
-              titulo: c.name,
-              tipo: c.type,
-              ejemploCelda: c.sampleData,
-              elegida: true,
-            }));
-            this.listaColumnas.set(mapeadas);
-            this.nombreHojaCalculo.set(respuesta.data.sheetName);
-            this.filasDeDatosEnArchivo.set(respuesta.data.totalRows);
-          }
-          this.cargandoListaColumnas.set(false);
-        },
-        error: (err: { error?: { message?: string } }) => {
-          this.cargandoListaColumnas.set(false);
-          this.mensajeErrorTabla.set(err?.error?.message || 'Error al procesar las columnas.');
-        },
-      });
+  private actualizarColumnasEnActiva(
+    fn: (cols: ColumnaExcel[]) => ColumnaExcel[],
+  ): void {
+    const wf = this.activeWorkflow();
+    if (!wf) return;
+    this.patchWorkflow(wf.sheetName, { columns: fn(wf.columns) });
   }
 
   clicEnFilaColumna(posicion: number): void {
-    this.listaColumnas.update((lista) =>
-      lista.map((c) => (c.posicion === posicion ? { ...c, elegida: !c.elegida } : c)),
+    this.actualizarColumnasEnActiva((cols) =>
+      cols.map((c) => (c.posicion === posicion ? { ...c, elegida: !c.elegida } : c)),
     );
   }
 
   marcarTodasLasColumnas(): void {
-    this.listaColumnas.update((lista) => lista.map((c) => ({ ...c, elegida: true })));
+    this.actualizarColumnasEnActiva((cols) => cols.map((c) => ({ ...c, elegida: true })));
   }
 
   quitarMarcaEnTodasLasColumnas(): void {
-    this.listaColumnas.update((lista) => lista.map((c) => ({ ...c, elegida: false })));
+    this.actualizarColumnasEnActiva((cols) => cols.map((c) => ({ ...c, elegida: false })));
   }
 
   invertirMarcadas(): void {
-    this.listaColumnas.update((lista) => lista.map((c) => ({ ...c, elegida: !c.elegida })));
+    this.actualizarColumnasEnActiva((cols) =>
+      cols.map((c) => ({ ...c, elegida: !c.elegida })),
+    );
   }
 
   alEscribirEnBusquedaColumnas(valor: string): void {
-    this.textoBuscarColumnas.set(valor);
-    this.paginaListaColumnas.set(1);
+    const wf = this.activeWorkflow();
+    if (!wf) return;
+    this.patchWorkflow(wf.sheetName, { columnSearchText: valor, columnPage: 1 });
   }
 
   irAPaginaColumnas(numeroPagina: number): void {
+    const wf = this.activeWorkflow();
+    if (!wf) return;
     if (numeroPagina >= 1 && numeroPagina <= this.totalPaginasListaColumnas()) {
-      this.paginaListaColumnas.set(numeroPagina);
+      this.patchWorkflow(wf.sheetName, { columnPage: numeroPagina });
     }
   }
 
+  // =========================================================================
+  // Preview actions (operate on active workflow)
+  // =========================================================================
+
   alCambiarTamanoPaginaVistaPrevia(valor: string): void {
+    const wf = this.activeWorkflow();
+    if (!wf) return;
     const n = parseInt(valor, 10);
     if (n === 10 || n === 15 || n === 20) {
-      this.tamanoPaginaVistaPrevia.set(n);
-      this.paginaVistaPrevia.set(1);
+      this.patchWorkflow(wf.sheetName, { previewPageSize: n, previewPage: 1 });
     }
   }
 
   irAPaginaVistaPrevia(numeroPagina: number): void {
+    const wf = this.activeWorkflow();
+    if (!wf) return;
     const total = this.totalPaginasVistaPrevia();
     if (numeroPagina >= 1 && numeroPagina <= total) {
-      this.paginaVistaPrevia.set(numeroPagina);
+      this.patchWorkflow(wf.sheetName, { previewPage: numeroPagina });
     }
   }
 
   async copiarJsonAlPortapapeles(): Promise<void> {
     try {
       await navigator.clipboard.writeText(this.jsonVista());
-      // Mantenemos `alert` como en el código original; sustituible por snackbar.
       alert('JSON copiado al portapapeles.');
     } catch {
-      this.mensajeErrorTabla.set('No se pudo copiar al portapapeles en este navegador.');
+      const wf = this.activeWorkflow();
+      if (wf) {
+        this.patchWorkflow(wf.sheetName, {
+          previewError: 'No se pudo copiar al portapapeles en este navegador.',
+        });
+      }
     }
+  }
+
+  // =========================================================================
+  // Flow navigation helpers (operate on active workflow)
+  // =========================================================================
+
+  reiniciarApartadoColumnasYPrevia(): void {
+    const wf = this.activeWorkflow();
+    if (!wf) return;
+    this.patchWorkflow(wf.sheetName, {
+      columns: [],
+      columnSearchText: '',
+      columnPage: 1,
+      previewHeaders: [],
+      previewRows: [],
+      previewTruncated: false,
+      previewTotalRowsInFile: 0,
+      previewLoading: false,
+      previewError: '',
+      previewPageSize: 10,
+      previewPage: 1,
+      columnTransferValidation: null,
+    });
+  }
+
+  volverDesdePreviaAColumnas(): void {
+    const wf = this.activeWorkflow();
+    if (!wf) return;
+    this.patchWorkflow(wf.sheetName, {
+      previewHeaders: [],
+      previewRows: [],
+      previewTruncated: false,
+      previewTotalRowsInFile: 0,
+      previewLoading: false,
+      previewError: '',
+      previewPageSize: 10,
+      previewPage: 1,
+      columnTransferValidation: null,
+    });
   }
 }

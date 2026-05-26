@@ -1,0 +1,31 @@
+<!-- Contenedor de notificaciones en esquina superior derecha -->
+<div class="notifications-container" aria-label="Notificaciones del sistema" role="status">
+  @for (notif of notificaciones(); track notif.id) {
+    <div
+      class="notification"
+      [class]="getNotificationClass(notif.type)"
+      role="alert"
+      aria-live="polite"
+    >
+      <!-- Ícono según tipo -->
+      <span class="notification__icon material-symbols-outlined">
+        {{ getNotificationIcon(notif.type) }}
+      </span>
+
+      <!-- Mensaje -->
+      <div class="notification__content">
+        <p class="notification__message">{{ notif.message }}</p>
+      </div>
+
+      <!-- Botón cerrar -->
+      <button
+        class="notification__close-btn"
+        type="button"
+        aria-label="Cerrar notificación"
+        (click)="cerrarNotificacion(notif.id)"
+      >
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  }
+</div>

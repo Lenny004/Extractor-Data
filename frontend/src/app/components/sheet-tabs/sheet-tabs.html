@@ -1,0 +1,12 @@
+<div class="sheet-tabs">
+  @for (name of sheets(); track name) {
+    <button
+      class="sheet-tab"
+      [class.sheet-tab--active]="name === activeSheet()"
+      (click)="cambiarHoja(name)"
+    >
+      <span class="material-symbols-outlined sheet-tab__icon">table</span>
+      <span class="sheet-tab__label">{{ name }}</span>
+    </button>
+  }
+</div>

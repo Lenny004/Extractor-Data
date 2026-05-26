@@ -20,6 +20,13 @@ export interface ColumnaExcel {
   elegida: boolean;
 }
 
+/** Información de una hoja del archivo (respuesta de /api/sheets). */
+export interface SheetInfo {
+  name: string;
+  rowCount: number;
+  isEmpty: boolean;
+}
+
 /** Resultado de validar el ancho de columnas entre hoja origen y hoja destino (respuesta de /api/extract). */
 export interface ValidacionTransferenciaColumnas {
   habilitada: boolean;
@@ -28,4 +35,52 @@ export interface ValidacionTransferenciaColumnas {
   columnasDestino: number;
   encabezadosTransferidos: string[];
   encabezadosOmitidos: string[];
+}
+
+/** Metadatos del SQL generado para una hoja. */
+export interface SqlMeta {
+  truncated: boolean;
+  totalRowsInFile: number;
+  rowCountInScript: number;
+  sheetName: string;
+}
+
+/**
+ * Estado completo del workflow de una hoja individual.
+ * Cada hoja activa tiene su propio flujo: columnas → preview → SQL.
+ */
+export interface SheetWorkflow {
+  sheetName: string;
+  isEmpty: boolean;
+
+  // Column selection
+  columns: ColumnaExcel[];
+  columnSearchText: string;
+  columnPage: number;
+  loadingColumns: boolean;
+  totalRowsInFile: number;
+
+  // Preview / extraction
+  previewHeaders: string[];
+  previewRows: string[][];
+  previewTruncated: boolean;
+  previewTotalRowsInFile: number;
+  previewLoading: boolean;
+  previewError: string;
+  previewPageSize: 10 | 15 | 20;
+  previewPage: number;
+  columnTransferValidation: ValidacionTransferenciaColumnas | null;
+
+  // Optional cross-sheet target validation
+  targetSheetName: string;
+
+  // SQL generation
+  sqlOutput: string;
+  sqlMeta: SqlMeta | null;
+  sqlGenerating: boolean;
+  sqlError: string;
+  tableName: string;
+  dialect: 'mysql' | 'postgresql';
+  includeCreateTable: boolean;
+  emptyStringAsNull: boolean;
 }

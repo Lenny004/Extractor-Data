@@ -31,29 +31,22 @@ export const routes: Routes = [
             (m) => m.ColumnSelectionSectionComponent,
           ),
       },
-      {
-        path: 'vista-previa',
-        canActivate: [requiereColumnasDetectadasGuard],
-        loadComponent: () =>
-          import('./features/preview-workspace-section/preview-workspace-section').then(
-            (m) => m.PreviewWorkspaceSectionComponent,
-          ),
-      },
-      {
-        path: 'espacio-trabajo',
-        loadComponent: () =>
-          import('./features/workspace-section/workspace-section').then(
-            (m) => m.WorkspaceSectionComponent,
-          ),
-      },
-      {
-        path: 'generador-sql',
-        canActivate: [requiereColumnasDetectadasGuard],
-        loadComponent: () =>
-          import('./features/sql-generator-section/sql-generator-section').then(
-            (m) => m.SqlGeneratorSectionComponent,
-          ),
-      },
+       {
+         path: 'vista-previa',
+         canActivate: [requiereColumnasDetectadasGuard],
+         loadComponent: () =>
+           import('./features/preview-workspace-section/preview-workspace-section').then(
+             (m) => m.PreviewWorkspaceSectionComponent,
+           ),
+       },
+       {
+         path: 'generador-sql',
+         canActivate: [requiereColumnasDetectadasGuard],
+         loadComponent: () =>
+           import('./features/sql-generator-section/sql-generator-section').then(
+             (m) => m.SqlGeneratorSectionComponent,
+           ),
+       },
     ],
   },
 ];

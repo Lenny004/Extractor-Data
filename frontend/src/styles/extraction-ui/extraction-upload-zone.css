@@ -89,3 +89,40 @@
   background-color: var(--primary-lt);
   transform: scale(1.01);
 }
+
+/* --- Aviso Legal --- */
+.legal-notice {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #ffeeba;
+  font-size: 0.9rem;
+}
+
+.legal-checkbox-container {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legal-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.legal-label {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* --- Bloqueo de la zona de subida --- */
+.upload-zone--disabled {
+  opacity: 0.5;
+  filter: grayscale(100%);
+  pointer-events: none; /* Esto "apaga" completamente el arrastrar, soltar y hacer clic */
+  cursor: not-allowed;
+}

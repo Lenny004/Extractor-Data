@@ -1,0 +1,132 @@
+/* Contenedor principal de notificaciones */
+.notifications-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none; /* Permite clicks a elementos debajo */
+}
+
+/* Notificación individual */
+.notification {
+  pointer-events: auto; /* Re-activa clicks en la notificación */
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideInRight 0.3s ease-out;
+  background-color: #f5f5f5;
+  border-left: 4px solid #2196f3;
+  color: #333;
+  min-width: 300px;
+  max-width: 400px;
+  word-wrap: break-word;
+}
+
+/* Variantes de tipo de notificación */
+.notification--info {
+  background-color: #e3f2fd;
+  border-left-color: #2196f3;
+  color: #0d47a1;
+}
+
+.notification--success {
+  background-color: #e8f5e9;
+  border-left-color: #4caf50;
+  color: #1b5e20;
+}
+
+.notification--warning {
+  background-color: #fff3e0;
+  border-left-color: #ff9800;
+  color: #e65100;
+}
+
+.notification--error {
+  background-color: #ffebee;
+  border-left-color: #f44336;
+  color: #b71c1c;
+}
+
+/* Ícono de notificación */
+.notification__icon {
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  font-variation-settings: 'FILL' 1;
+}
+
+/* Contenido de la notificación */
+.notification__content {
+  flex: 1;
+}
+
+/* Mensaje de la notificación */
+.notification__message {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* Botón cerrar */
+.notification__close-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.notification__close-btn:hover {
+  opacity: 1;
+}
+
+/* Animación de entrada */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Animación de salida (opcional, cuando se cierre) */
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Responsivo: en pantallas pequeñas */
+@media (max-width: 640px) {
+  .notifications-container {
+    left: 1rem;
+    right: 1rem;
+    top: auto;
+    bottom: 1rem;
+  }
+
+  .notification {
+    min-width: auto;
+    max-width: 100%;
+  }
+}

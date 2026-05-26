@@ -7,6 +7,11 @@
   gap: 0.5rem;
 }
 
+.field--wide {
+  max-width: none;
+  width: 100%;
+}
+
 .field__label {
   font-size: 1rem;
   font-weight: 600;
