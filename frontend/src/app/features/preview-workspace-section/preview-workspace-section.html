@@ -21,6 +21,21 @@
       (sheetChange)="cambiarHoja($event)"
     />
 
+    <div class="ws-header">
+      <div>
+        <h1 class="card-header__title">Datos extraídos</h1>
+        <p class="card-header__description">
+          Hoja <strong>{{ session.nombreHojaFormateado() }}</strong>
+          @if (session.totalFilasQueHayEnExcel() > 0) {
+            &middot; {{ session.totalFilasQueHayEnExcel() }} filas en el archivo
+          }
+          @if (session.resultadoTruncado()) {
+            <span class="ws-header__warn"> &middot; Vista limitada a las primeras filas por tamaño.</span>
+          }
+        </p>
+      </div>
+    </div>
+
     @if (session.filasTabla().length === 0 && !session.esperandoRespuestaTabla()) {
       <div class="alert-banner alert-banner--info" role="status">
         <span class="material-symbols-outlined">info</span>
@@ -32,31 +47,6 @@
         </span>
       </div>
     }
-
-    <div class="ws-header">
-      <div>
-        <h1 class="card-header__title">Datos extraídos</h1>
-        <p class="card-header__description">
-          Hoja <strong>{{ session.nombreHojaFormateado() }}</strong> ·
-          @if (session.filasTabla().length > 0) {
-            Mostrando filas
-            {{ (session.paginaVistaPrevia() - 1) * session.tamanoPaginaVistaPrevia() + 1 }}–{{
-              (session.paginaVistaPrevia() - 1) * session.tamanoPaginaVistaPrevia() +
-                session.filasVistaPreviaPaginadas().length
-            }}
-            de {{ session.filasTabla().length }} en vista previa
-          } @else {
-            Sin filas en vista previa
-          }
-          @if (session.totalFilasQueHayEnExcel() > session.filasTabla().length) {
-            ({{ session.totalFilasQueHayEnExcel() }} filas en el archivo)
-          }
-          @if (session.resultadoTruncado()) {
-            <span class="ws-header__warn"> · Vista limitada a las primeras filas por tamaño.</span>
-          }
-        </p>
-      </div>
-    </div>
 
     @if (session.ultimaValidacionTransferencia(); as val) {
       <div class="alert-banner alert-banner--info" role="status">
@@ -81,6 +71,38 @@
         </div>
       </div>
     }
+
+    <div class="ws-table-wrap">
+      @if (session.esperandoRespuestaTabla()) {
+        <div class="col-loading">
+          <span class="material-symbols-outlined col-loading__icon">hourglass_top</span>
+          <p>Extrayendo datos...</p>
+        </div>
+      } @else if (session.filasTabla().length > 0) {
+        <table class="ws-table">
+          <thead>
+            <tr>
+              <th class="ws-table__th ws-table__th--num">#</th>
+              @for (h of session.titulosTabla(); track $index) {
+                <th class="ws-table__th">{{ h }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of session.filasVistaPreviaPaginadas(); track $index; let ri = $index) {
+              <tr>
+                <td class="ws-table__td ws-table__td--num">
+                  {{ (session.paginaVistaPrevia() - 1) * session.tamanoPaginaVistaPrevia() + ri + 1 }}
+                </td>
+                @for (cell of row; track $index) {
+                  <td class="ws-table__td">{{ cell }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
 
     @if (session.filasTabla().length > 0) {
       <div class="preview-pagination-toolbar">
@@ -156,37 +178,6 @@
       </div>
     }
 
-    <div class="ws-table-wrap">
-      <table class="ws-table">
-        <thead>
-          <tr>
-            <th class="ws-table__th ws-table__th--num">#</th>
-            @for (h of session.titulosTabla(); track $index) {
-              <th class="ws-table__th">{{ h }}</th>
-            }
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of session.filasVistaPreviaPaginadas(); track $index; let ri = $index) {
-            <tr>
-              <td class="ws-table__td ws-table__td--num">
-                {{ (session.paginaVistaPrevia() - 1) * session.tamanoPaginaVistaPrevia() + ri + 1 }}
-              </td>
-              @for (cell of row; track $index) {
-                <td class="ws-table__td">{{ cell }}</td>
-              }
-            </tr>
-          } @empty {
-            <tr>
-              <td class="ws-table__empty" [attr.colspan]="session.titulosTabla().length + 1">
-                No hay filas de datos para las columnas seleccionadas.
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-
     <div class="card-footer card-footer--between">
       <button class="btn--back" type="button" (click)="volverAColumnas()">
         <span class="material-symbols-outlined">arrow_back</span>
@@ -218,6 +209,10 @@
         <button class="btn-copy" type="button" (click)="copiarJson()">
           <span class="material-symbols-outlined btn-copy__icon">content_copy</span>
           <span>Copiar JSON</span>
+        </button>
+        <button class="btn-copy" type="button" (click)="session.descargarExcel()">
+          <span class="material-symbols-outlined">table_chart</span>
+          <span>Descargar Excel</span>
         </button>
       </div>
     </div>

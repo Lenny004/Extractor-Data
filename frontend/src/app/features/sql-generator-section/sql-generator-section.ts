@@ -87,15 +87,22 @@ export class SqlGeneratorSectionComponent {
   private cargarDefaults(): void {
     this.sincronizarConWorkflow();
     if (!this.nombreTabla()) {
-      const archivo = this.session.nombreArchivo();
-      if (archivo) {
-        const wf = this.session.activeWorkflow();
-        const base = this.deriveTableName(archivo);
-        const sheetSuffix = wf ? `_${wf.sheetName.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase()}` : '';
-        this.nombreTabla.set(`${base}${sheetSuffix}`);
-      } else {
-        this.nombreTabla.set('datos_extraidos');
-      }
+      this.derivarNombreTabla();
+    }
+  }
+
+  private derivarNombreTabla(): void {
+    const archivo = this.session.nombreArchivo();
+    if (archivo) {
+      const wf = this.session.activeWorkflow();
+      const base = this.deriveTableName(archivo);
+      const sheetSuffix = wf ? `_${wf.sheetName.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase()}` : '';
+      const name = `${base}${sheetSuffix}`;
+      this.nombreTabla.set(name);
+      this.escribirAWorkflow({ tableName: name });
+    } else {
+      this.nombreTabla.set('datos_extraidos');
+      this.escribirAWorkflow({ tableName: 'datos_extraidos' });
     }
   }
 
@@ -124,6 +131,13 @@ export class SqlGeneratorSectionComponent {
     this.session.activarHoja(name);
     this.sincronizarConWorkflow();
     this.sqlCopied.set(false);
+    if (!this.nombreTabla()) {
+      this.derivarNombreTabla();
+    }
+    const wf = this.session.activeWorkflow();
+    if (wf && wf.columns.length === 0 && !wf.loadingColumns) {
+      this.session.pedirColumnasDeHoja(name);
+    }
   }
 
   alCambiarNombreTabla(valor: string): void {

@@ -162,6 +162,15 @@
             <span class="material-symbols-outlined" aria-hidden="true">table_rows</span>
             .csv
           </button>
+          <button
+            class="sql-preview__btn sql-preview__btn--download"
+            type="button"
+            [disabled]="!csvDownloadReady()"
+            (click)="session.descargarExcel()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">table_chart</span>
+            .xlsx
+          </button>
         </div>
       </div>
       <div class="sql-preview__code" role="region" aria-label="Vista previa del SQL generado">

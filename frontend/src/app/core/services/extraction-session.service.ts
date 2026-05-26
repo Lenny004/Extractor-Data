@@ -2,6 +2,7 @@ import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Observable, catchError, map, of, take } from 'rxjs';
+import * as XLSX from 'xlsx';
 
 import type {
   ColumnaExcel,
@@ -816,6 +817,35 @@ export class ExtractionSessionService {
         });
       }
     }
+  }
+
+  descargarExcel(): void {
+    const headers = this.titulosTabla();
+    const rows = this.filasTabla();
+    if (headers.length === 0 || rows.length === 0) return;
+
+    const sheetData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+    const colWidths = headers.map((h, i) => {
+      const maxLen = Math.max(
+        h.length,
+        ...rows.map((r) => (r[i] ?? '').length),
+      );
+      return { wch: Math.min(maxLen + 3, 60) };
+    });
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, this.nombreHojaFormateado() || 'Datos');
+
+    const nombreBase = this.nombreArchivo()
+      .replace(/\.[^.]+$/, '')
+      .replace(/[^a-zA-Z0-9_]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '')
+      .toLowerCase();
+    XLSX.writeFile(wb, `${nombreBase}_extraido.xlsx`);
   }
 
   // =========================================================================
