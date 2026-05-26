@@ -229,6 +229,15 @@
   background-color: #1e40af;
 }
 
+.sql-preview__btn--csv {
+  background-color: #0d9488;
+  color: #fff;
+}
+
+.sql-preview__btn--csv:hover:not(:disabled) {
+  background-color: #0f766e;
+}
+
 .sql-preview__code {
   background-color: #1e1e2e;
   padding: 1.5rem 0;

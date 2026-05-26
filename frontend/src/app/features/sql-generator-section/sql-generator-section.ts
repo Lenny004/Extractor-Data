@@ -54,6 +54,10 @@ export class SqlGeneratorSectionComponent {
 
   readonly sqlGenerated = computed(() => this._sqlMeta() !== null);
 
+  readonly csvDownloadReady = computed(
+    () => this.session.titulosTabla().length > 0 && this.session.filasTabla().length > 0,
+  );
+
   readonly sqlLines = computed(() => {
     const sql = this._sqlSalida();
     if (!sql) return [];
@@ -208,6 +212,34 @@ export class SqlGeneratorSectionComponent {
     const a = document.createElement('a');
     a.href = url;
     a.download = `${nombreBase}.sql`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  descargarCsv(): void {
+    const headers = this.session.titulosTabla();
+    const rows = this.session.filasTabla();
+    if (headers.length === 0 || rows.length === 0) return;
+
+    const escapar = (v: string): string => {
+      if (v.includes(',') || v.includes('"') || v.includes('\n') || v.includes('\r')) {
+        return `"${v.replace(/"/g, '""')}"`;
+      }
+      return v;
+    };
+
+    const lineas: string[] = [headers.map(escapar).join(',')];
+    for (const fila of rows) {
+      lineas.push(fila.map(escapar).join(','));
+    }
+
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const nombreBase = this.nombreTabla().trim().replace(/[^\w.-]+/g, '_') || 'output';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${nombreBase}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }

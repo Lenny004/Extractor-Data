@@ -151,7 +151,16 @@
             (click)="descargarSql()"
           >
             <span class="material-symbols-outlined" aria-hidden="true">download</span>
-            Descargar
+            .sql
+          </button>
+          <button
+            class="sql-preview__btn sql-preview__btn--csv"
+            type="button"
+            [disabled]="!csvDownloadReady()"
+            (click)="descargarCsv()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">table_rows</span>
+            .csv
           </button>
         </div>
       </div>
