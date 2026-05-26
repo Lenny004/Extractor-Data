@@ -9,43 +9,20 @@
     </div>
 
     <nav class="side-menu__nav" aria-label="Pasos de extracción">
-      <a
-        href="#"
-        class="side-menu__link"
-        [class.side-menu__link--active]="rutaUrl().includes('/subir')"
-        (click)="alPulsarSubirEnMenu($event)"
-      >
-        <span
-          class="material-symbols-outlined"
-          [class.side-menu__filled-icon]="rutaUrl().includes('/subir')"
-          >upload_file</span
-        >
+      <a href="#" class="side-menu__link" [class.side-menu__link--active]="rutaUrl().includes('/subir')"
+        (click)="alPulsarSubirEnMenu($event)">
+        <span class="material-symbols-outlined"
+          [class.side-menu__filled-icon]="rutaUrl().includes('/subir')">upload_file</span>
         <span>Subir</span>
       </a>
-
-      <a
-        class="side-menu__link"
-        routerLink="/columnas"
-        routerLinkActive="side-menu__link--active"
-        href="#"
-      >
-        <span class="material-symbols-outlined" routerLinkActive="side-menu__filled-icon"
-          >view_column</span
-        >
+      <a class="side-menu__link" routerLink="/columnas" routerLinkActive="side-menu__link--active" href="#">
+        <span class="material-symbols-outlined" routerLinkActive="side-menu__filled-icon">view_column</span>
         <span>Selección de Columnas</span>
       </a>
-
-      <a
-        href="#"
-        class="side-menu__link"
-        [class.side-menu__link--active]="rutaUrl().includes('/vista-previa')"
-        (click)="alPulsarVistaPreviaEnMenu($event)"
-      >
-        <span
-          class="material-symbols-outlined"
-          [class.side-menu__filled-icon]="rutaUrl().includes('/vista-previa')"
-          >table_chart</span
-        >
+      <a href="#" class="side-menu__link" [class.side-menu__link--active]="rutaUrl().includes('/vista-previa')"
+        (click)="alPulsarVistaPreviaEnMenu($event)">
+        <span class="material-symbols-outlined"
+          [class.side-menu__filled-icon]="rutaUrl().includes('/vista-previa')">table_chart</span>
         <span>Vista Previa</span>
       </a>
 
@@ -60,9 +37,12 @@
         >
         <span>Generador SQL</span>
       </a>
+      <a class="side-menu__link" routerLink="/espacio-trabajo" routerLinkActive="side-menu__link--active" href="#">
+        <span class="material-symbols-outlined" routerLinkActive="side-menu__filled-icon">grid_view</span>
+        <span>Espacio de Trabajo</span>
+      </a>
     </nav>
   </aside>
-
   <div class="main__content" [class.main__content--wide]="usarContenidoAncho()">
     <router-outlet />
   </div>
