@@ -40,7 +40,10 @@ export class UploadSectionComponent {
   }
 
   seleccionarTodasLasHojas(): void {
-    const names = this.session.hojasDisponibles();
+    const names = this.session
+      .hojasInfo()
+      .filter((h) => !h.isEmpty)
+      .map((h) => h.name);
     this.hojasSeleccionadas.set(new Set(names));
   }
 

@@ -109,42 +109,59 @@
       </div>
 
       @if (session.hojasDisponibles().length > 0 && session.estadoSubida() === 'done') {
-        <div class="field">
+        <div class="field field--wide">
           <label class="field__label">Hojas a procesar</label>
           <p class="field__hint">
             Selecciona una o más hojas. Cada una tendrá su propio flujo de columnas, vista previa y SQL.
           </p>
 
-          <div class="field__input-wrapper" style="flex-direction: column; gap: 0.25rem; padding: 0.5rem 0;">
-            @for (info of session.hojasInfo(); track info.name) {
-              <label
-                class="legal-checkbox-container"
-                [style.opacity]="info.isEmpty ? '0.5' : '1'"
-              >
-                <input
-                  class="legal-checkbox"
-                  type="checkbox"
-                  [checked]="hojasSeleccionadas().has(info.name)"
-                  [disabled]="info.isEmpty"
-                  (change)="toggleHoja(info.name)"
-                />
-                <span class="legal-label">
-                  {{ info.name }}
-                  @if (!info.isEmpty) {
-                    <span style="color: var(--tx-muted); font-size: 0.75rem;"> — {{ info.rowCount }} filas</span>
-                  } @else {
-                    <span style="color: var(--tx-muted); font-size: 0.75rem;"> — Vacía</span>
-                  }
-                </span>
-              </label>
-            }
+          <div class="sheets-table">
+            <div class="sheets-table__inner">
+              <div class="sheets-table__head">
+                <span class="sheets-table__cell">#</span>
+                <span class="sheets-table__cell">Hoja</span>
+                <span class="sheets-table__cell">Filas</span>
+                <span class="sheets-table__cell">Estado</span>
+                <span class="sheets-table__cell">Seleccionar</span>
+              </div>
+              @for (info of session.hojasInfo(); track info.name; let i = $index) {
+                <div
+                  class="sheets-table__row"
+                  [class.sheets-table__row--disabled]="info.isEmpty"
+                  (click)="!info.isEmpty && toggleHoja(info.name)"
+                >
+                  <span class="sheets-table__cell sheets-table__cell--num">{{ i + 1 }}</span>
+                  <span class="sheets-table__cell sheets-table__cell--name">{{ info.name }}</span>
+                  <span class="sheets-table__cell sheets-table__cell--num">
+                    {{ info.isEmpty ? '—' : info.rowCount }}
+                  </span>
+                  <span class="sheets-table__cell">
+                    @if (info.isEmpty) {
+                      <span class="sheets-table__badge sheets-table__badge--empty">Vacía</span>
+                    } @else {
+                      <span class="sheets-table__badge sheets-table__badge--active">Activa</span>
+                    }
+                  </span>
+                  <span class="sheets-table__cell sheets-table__cell--select">
+                    <input
+                      class="legal-checkbox"
+                      type="checkbox"
+                      [checked]="hojasSeleccionadas().has(info.name)"
+                      [disabled]="info.isEmpty"
+                      (change)="toggleHoja(info.name)"
+                      (click)="$event.stopPropagation()"
+                    />
+                  </span>
+                </div>
+              }
+            </div>
           </div>
 
           <button
             class="btn--back"
             type="button"
             (click)="seleccionarTodasLasHojas()"
-            style="margin-top: 0.25rem;"
+            style="margin-top: 0.75rem;"
           >
             <span class="material-symbols-outlined">select_all</span>
             Seleccionar todas
