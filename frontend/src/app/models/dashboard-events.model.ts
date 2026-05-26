@@ -29,6 +29,7 @@ export type DashboardEvent =
   | {
       type: 'PROCEED_TO_COLUMN_SELECTION';
       /** El usuario terminó la subida y quiere mapear columnas. */
+      payload: { selectedSheets: string[] };
     }
   | {
       type: 'REQUEST_PREVIEW_FROM_MENU';

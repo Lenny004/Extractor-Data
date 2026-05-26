@@ -13,11 +13,18 @@
       <span class="breadcrumb__current">Script SQL</span>
     </nav>
 
+    <app-sheet-tabs
+      [sheets]="session.hojasActivas()"
+      [activeSheet]="session.activeSheetName()"
+      (sheetChange)="cambiarHoja($event)"
+    />
+
     <header class="sql-header">
       <div class="sql-header__text">
         <div class="card-header">
           <h1 class="card-header__title">Generador SQL</h1>
           <p class="card-header__description">
+            Hoja <strong>{{ session.activeSheetName() }}</strong> &middot;
             Define el nombre de la tabla y el motor. Genera un script con las columnas marcadas en el paso
             anterior (mismos límites de filas que la extracción en servidor).
           </p>
@@ -28,7 +35,7 @@
         <div class="sql-stats__value">
           @if (sqlGenerated()) {
             <span class="material-symbols-outlined sql-stats__check" aria-hidden="true">check_circle</span>
-            <span>{{ meta()!.rowCountInScript }}</span>
+            <span>{{ _sqlMeta()!.rowCountInScript }}</span>
           } @else {
             <span class="sql-stats__placeholder">—</span>
           }
@@ -43,10 +50,10 @@
       </div>
     }
 
-    @if (error()) {
+    @if (_error()) {
       <div class="alert-banner alert-banner--error sql-alert" role="alert">
         <span class="material-symbols-outlined">error</span>
-        <span>{{ error() }}</span>
+        <span>{{ _error() }}</span>
       </div>
     }
 
@@ -91,10 +98,10 @@
         <button
           class="btn--primary"
           type="button"
-          [disabled]="!puedeGenerar() || sqlGenerating()"
+          [disabled]="!puedeGenerar() || _sqlGenerating()"
           (click)="generar()"
         >
-          @if (sqlGenerating()) {
+          @if (_sqlGenerating()) {
             <span class="material-symbols-outlined sql-spin" aria-hidden="true">progress_activity</span>
             Generando…
           } @else {
@@ -105,7 +112,7 @@
       </div>
     </div>
 
-    @if (meta(); as m) {
+    @if (_sqlMeta(); as m) {
       <div class="alert-banner alert-banner--info sql-meta-banner" role="status">
         <span class="material-symbols-outlined">info</span>
         <span>
@@ -129,7 +136,7 @@
           <span class="sql-preview__filename">{{ (nombreTabla() || 'output') + '.sql' }}</span>
         </div>
         <div class="sql-preview__actions">
-          <button class="sql-preview__btn" type="button" [disabled]="!sqlSalida()" (click)="copiarSql()">
+          <button class="sql-preview__btn" type="button" [disabled]="!_sqlSalida()" (click)="copiarSql()">
             <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
             @if (sqlCopied()) {
               ¡Copiado!
@@ -140,7 +147,7 @@
           <button
             class="sql-preview__btn sql-preview__btn--download"
             type="button"
-            [disabled]="!sqlSalida()"
+            [disabled]="!_sqlSalida()"
             (click)="descargarSql()"
           >
             <span class="material-symbols-outlined" aria-hidden="true">download</span>

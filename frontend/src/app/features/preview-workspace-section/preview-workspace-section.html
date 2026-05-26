@@ -15,11 +15,29 @@
       <span class="breadcrumb__current">Datos extraídos</span>
     </nav>
 
+    <app-sheet-tabs
+      [sheets]="session.hojasActivas()"
+      [activeSheet]="session.activeSheetName()"
+      (sheetChange)="cambiarHoja($event)"
+    />
+
+    @if (session.filasTabla().length === 0 && !session.esperandoRespuestaTabla()) {
+      <div class="alert-banner alert-banner--info" role="status">
+        <span class="material-symbols-outlined">info</span>
+        <span>
+          La hoja <strong>{{ session.activeSheetName() }}</strong> aún no tiene datos extraídos.
+          <button class="btn--link" type="button" (click)="extraerHojaActiva()">
+            Extraer datos de esta hoja
+          </button>
+        </span>
+      </div>
+    }
+
     <div class="ws-header">
       <div>
         <h1 class="card-header__title">Datos extraídos</h1>
         <p class="card-header__description">
-          Int<strong>{{ session.nombreHojaFormateado() }}</strong> ·
+          Hoja <strong>{{ session.nombreHojaFormateado() }}</strong> ·
           @if (session.filasTabla().length > 0) {
             Mostrando filas
             {{ (session.paginaVistaPrevia() - 1) * session.tamanoPaginaVistaPrevia() + 1 }}–{{

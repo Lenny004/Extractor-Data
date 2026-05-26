@@ -43,8 +43,10 @@ npm run backend       # cd backend && npm run dev (port 3000)
   - `/columnas` — column-selection-section (guard: `requiereArchivoSubidoGuard`)
   - `/vista-previa` — preview-workspace-section (guard: `requiereColumnasDetectadasGuard`)
   - `/generador-sql` — sql-generator-section (guard: `requiereColumnasDetectadasGuard`)
-- **State**: `ExtractionSessionService` (providedIn: root) holds all state as signals. `DashboardEventBusService` coordinates cross-component events.
-- **CSS**: Native CSS (no Tailwind). BEM convention. Global vars in `src/styles.css` (`:root`). Extraction UI styles in `src/styles/extraction-ui.css` (imports 14 modular files from `extraction-ui/`). Dark mode via `.theme--dark` class.
+- **State**: `ExtractionSessionService` (providedIn: root) holds all state as signals. `DashboardEventBusService` coordinates cross-component events via EDA pattern.
+- **Multi-sheet workflows**: `ExtractionSessionService` manages a `workflows: Record<string, SheetWorkflow>` map. Each selected sheet has an independent workflow with its own columns, preview data, and SQL output. `activeSheetName` tracks the currently viewed sheet. Backward-compat proxy signals (`listaColumnas`, `titulosTabla`, `filasTabla`, etc.) delegate to the active workflow.
+- **Sheet tabs**: `SheetTabsComponent` (`components/sheet-tabs/`) is a reusable tab bar for switching between sheets in each section.
+- **CSS**: Native CSS (no Tailwind). BEM convention. Global vars in `src/styles.css` (`:root`). Extraction UI styles in `src/styles/extraction-ui.css` (imports 15 modular files from `extraction-ui/`). Dark mode via `.theme--dark` class.
 - **`URL_SERVIDOR`**: Hardcoded to `http://localhost:3000` in `extraction-session.service.ts:12`.
 - **packageManager**: Pinned to `npm@11.6.2`. Use npm, not pnpm/yarn.
 - **EditorConfig**: `frontend/.editorconfig` — 2-space indent, UTF-8, single quotes for TS.
@@ -59,16 +61,18 @@ npm run backend       # cd backend && npm run dev (port 3000)
 - **Uploads**: Max 10MB. Allowed: `.xlsx`, `.xls`, `.csv`, `.dat`. Stored in `backend/uploads/`. Auto-cleanup every 5 min, files expire after 2 min (`UPLOAD_MAX_AGE_MS=120000` in `utils/file.utils.ts`).
 - **Extract limit**: `MAX_EXTRACT_ROWS = 5000` in `utils/extract-matrix.util.ts:8`.
 - **SQL generation**: Supports `mysql` and `postgresql` dialects. Optional `CREATE TABLE` + `INSERT` statements.
-- **No test or lint config** in backend.
+- **No test or lint config** in backend. Backend accepts `sheetName` param — no changes needed for multi-sheet; frontend calls per-sheet.
 
 ## Conventions
 
 - **Commits**: Conventional Commits: `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`. Scopes optional.
-- **Naming**: Components PascalCase (`upload.component.ts`), services camelCase (`excel.service.ts`), models PascalCase (`extraction.model.ts`). File suffix by type.
-- **Component file structure**: `name.component.ts`, `.html`, `.css`, `.spec.ts` co-located in feature dirs.
+- **Naming**: Component class PascalCase (`UploadSectionComponent`), file kebab-case (`upload-section.ts`). Services camelCase (`excel.service.ts`), models PascalCase (`extraction.model.ts`). File suffix by type.
+- **Component file structure**: `name.ts`, `name.html` co-located in feature dirs. Optional `name.css` for reusable components. No `.component.ts` suffix.
 - **Backend file structure**: `routes/*.routes.ts`, `controllers/*.controller.ts`, `middleware/*.middleware.ts`, `utils/*.util.ts`.
+- **Multi-sheet**: Each sheet has an independent `SheetWorkflow` (see `models/extraction.model.ts`). When adding new per-sheet state, add to the `SheetWorkflow` interface and use `patchWorkflow()` to update.
+- **Shared component**: `<app-sheet-tabs>` (`components/sheet-tabs/`) for horizontal sheet tabs. Takes `sheets` (string[]) and `activeSheet` inputs, emits `sheetChange`.
 
 ## Additional references
 
 - `.cursor/rules/` contains 4 MDC files with detailed conventions (project-conventions, angular-standards, backend-standards, css-guide). May contain stale references but is the closest to formal standards.
-- `.cursor/plans/` contains outdated tactical plans from a refactoring pass already applied to the code.
+- `.cursor/plans/paso-3-extraccion-tabla.md` — outdated plan from a previous refactoring pass.

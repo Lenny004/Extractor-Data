@@ -32,12 +32,17 @@ export const requiereColumnasDetectadasGuard: CanActivateFn = () => {
   const router = inject(Router);
   const notificaciones = inject(NotificationService);
 
-  if (sesion.tieneArchivoListo() && sesion.listaColumnas().length > 0) return true;
-
   if (!sesion.tieneArchivoListo()) {
     notificaciones.error('No haz subido ningún archivo');
     return router.createUrlTree(['/subir']);
   }
+
+  if (sesion.hojasActivas().length === 0) {
+    notificaciones.error('Selecciona al menos una hoja para procesar');
+    return router.createUrlTree(['/subir']);
+  }
+
+  if (sesion.activeWorkflow() && sesion.listaColumnas().length > 0) return true;
 
   notificaciones.warning('Debes seleccionar columnas primero');
   return router.createUrlTree(['/columnas']);

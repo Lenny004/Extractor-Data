@@ -74,7 +74,16 @@ export class DashboardComponent {
         void this.navegarConReglas(evento.payload.target);
         break;
       case 'PROCEED_TO_COLUMN_SELECTION':
-        this.session.iniciarSeleccionDeColumnas();
+        for (const name of evento.payload.selectedSheets) {
+          const info = this.session.hojasInfo().find((h) => h.name === name);
+          if (info) {
+            this.session.inicializarWorkflow(info);
+          }
+        }
+        if (evento.payload.selectedSheets.length > 0) {
+          this.session.activarHoja(evento.payload.selectedSheets[0]);
+          this.session.iniciarSeleccionDeColumnas();
+        }
         void this.router.navigate(['columnas']);
         break;
       case 'REQUEST_PREVIEW_FROM_MENU':
