@@ -21,16 +21,32 @@ export class PreviewWorkspaceSectionComponent {
     const current = this.session.activeSheetName();
     if (name === current) return;
     this.session.activarHoja(name);
+    const wf = this.session.activeWorkflow();
+    if (wf && wf.columns.length === 0 && !wf.loadingColumns) {
+      this.session.pedirColumnasDeHoja(name);
+    }
   }
 
   extraerHojaActiva(): void {
     const wf = this.session.activeWorkflow();
     if (!wf) return;
+
+    if (wf.columns.length === 0) {
+      if (!wf.loadingColumns) {
+        this.session.pedirColumnasDeHoja(wf.sheetName);
+      }
+      return;
+    }
+
     this.session.pedirTablaDeHoja(wf.sheetName).subscribe((ok) => {
       if (ok) {
         this.sincronizarInputPaginaConSesion();
       }
     });
+  }
+
+  irAGeneradorSql(): void {
+    this.eventBus.emit({ type: 'REQUEST_NAVIGATION', payload: { target: 'generador-sql' } });
   }
 
   volverASubir(): void {
